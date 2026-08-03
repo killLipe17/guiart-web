@@ -1,29 +1,31 @@
-import { Header } from "@/components/layout/Header"; 
-import { Hero } from "@/components/home/Hero"; 
-import { TrustBanner } from "@/components/home/TrustBanner"; 
-import { Categories } from "@/components/home/Categories"; 
-import { Stats } from "@/components/home/Stats"; 
-import { WhyChooseUs } from "@/components/home/WhyChooseUs"; 
-import { HowItWorks } from "@/components/home/HowItWorks"; 
-import { FeaturedProducts } from "@/components/home/FeaturedProducts"; 
-import { CallToAction } from "@/components/home/CallToAction"; // Novo import
+import { Header } from "@/components/layout/Header";
+import { Hero } from "@/components/home/Hero";
+import { TrustBanner } from "@/components/home/TrustBanner";
+import { Numbers } from "@/components/home/Numbers"; // Novo import adicionado
+import { Categories } from "@/components/home/Categories";
+import { Stats } from "@/components/home/Stats";
+import { WhyChooseUs } from "@/components/home/WhyChooseUs";
+import { HowItWorks } from "@/components/home/HowItWorks";
+import { FeaturedProducts } from "@/components/home/FeaturedProducts";
+import { CallToAction } from "@/components/home/CallToAction"; 
 import { AboutStore } from "@/components/home/AboutStore"; 
-import { Footer } from "@/components/layout/Footer"; 
+import { Footer } from "@/components/layout/Footer";
 
-export default function Home() { 
-  return ( 
-    <> 
-      <Header /> 
-      <Hero /> 
-      <TrustBanner /> 
-      <Categories /> 
-      <Stats /> 
-      <WhyChooseUs /> 
-      <HowItWorks /> 
-      <FeaturedProducts /> 
-      <CallToAction /> {/* Posicionado logo depois dos Produtos em Destaque */}
+export default function Home() {
+  return (
+    <>
+      <Header />
+      <Hero />
+      <TrustBanner />
+      <Numbers /> {/* Posicionado logo abaixo do TrustBanner */}
+      <Categories />
+      <Stats />
+      <WhyChooseUs />
+      <HowItWorks />
+      <FeaturedProducts />
+      <CallToAction /> 
       <AboutStore /> 
-      <Footer /> 
-    </> 
-  ); 
+      <Footer />
+    </>
+  );
 }

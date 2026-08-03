@@ -1,17 +1,16 @@
-@import "tailwindcss";
+:root {
+  --background: #0a0a0a;
+  --card: #151515;
 
-* {
-  box-sizing: border-box;
+  --primary: #d62828;
+
+  --gold: #d4af37;
+  --gold-soft: #e5c76b;
+
+  --border: #2a2a2a;
+
+  --text: #ffffff;
+  --muted: #a1a1aa;
 }
 
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  color: white;
-  background:
-    radial-gradient(circle at top, rgba(250, 204, 21, 0.08), transparent 35%),
-    radial-gradient(circle at bottom right, rgba(168, 85, 247, 0.08), transparent 30%),
-    #09090b;
-}
+@import "tailwindcss"; * { box-sizing: border-box; } html { scroll-behavior: smooth; } body { color: white; background: radial-gradient(circle at top, rgba(250, 204, 21, 0.08), transparent 35%), radial-gradient(circle at bottom right, rgba(168, 85, 247, 0.08), transparent 30%), #09090b; }

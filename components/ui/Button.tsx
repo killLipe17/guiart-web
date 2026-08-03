@@ -23,11 +23,12 @@ export function Button({
     transition-all
     duration-300
     hover:-translate-y-1
+    active:translate-y-0
     focus:outline-none
     focus:ring-2
-    focus:ring-red-500
+    focus:ring-yellow-400
     focus:ring-offset-2
-    focus:ring-offset-zinc-950
+    focus:ring-offset-black
     disabled:opacity-50
     disabled:cursor-not-allowed
   `;
@@ -37,7 +38,7 @@ export function Button({
       "bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-500/20 hover:shadow-red-500/40",
 
     secondary:
-      "border border-zinc-700 text-white hover:border-red-500",
+      "border border-zinc-700 bg-zinc-900 text-white hover:border-yellow-400 hover:bg-zinc-800",
   };
 
   return (
