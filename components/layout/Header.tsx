@@ -6,36 +6,53 @@ import {
   Menu,
   MessageCircle,
   ShieldCheck,
+  ShoppingCart,
   X,
 } from "lucide-react";
 
+import { useCart } from "@/components/cart/CartProvider";
 import { Input } from "@/components/ui/Input";
 import { Logo } from "@/components/ui/Logo";
 
-const whatsappUrl = "https://wa.me/5511962222045";
+const whatsappUrl =
+  "https://wa.me/5511962222045";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] =
     useState(false);
 
+  const {
+    totalItems,
+    isHydrated,
+    openCart,
+  } = useCart();
+
+  const visibleTotal =
+    totalItems > 99 ? "99+" : totalItems;
+
   function closeMobileMenu() {
     setMobileMenuOpen(false);
+  }
+
+  function handleOpenCart() {
+    setMobileMenuOpen(false);
+    openCart();
   }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-zinc-800/80 bg-black/90 text-white backdrop-blur-2xl">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
-        <div className="flex min-h-20 items-center justify-between gap-3 py-3">
+        <div className="flex min-h-20 items-center justify-between gap-2 py-3">
           <Link
             href="/"
             onClick={closeMobileMenu}
             aria-label="Voltar para a página inicial"
             className="min-w-0 shrink"
           >
-            <div className="max-w-[210px] overflow-hidden sm:max-w-none">
+            <div className="max-w-[150px] overflow-hidden min-[380px]:max-w-[190px] sm:max-w-none">
               <Logo />
 
-              <p className="mt-1 hidden text-[9px] font-medium uppercase leading-4 tracking-[0.18em] text-zinc-500 min-[380px]:block sm:text-[10px] sm:tracking-[0.22em]">
+              <p className="mt-1 hidden text-[9px] font-medium uppercase leading-4 tracking-[0.18em] text-zinc-500 min-[400px]:block sm:text-[10px] sm:tracking-[0.22em]">
                 Games • Consoles • Colecionáveis
               </p>
             </div>
@@ -78,48 +95,72 @@ export function Header() {
             />
           </div>
 
-          <div className="hidden shrink-0 items-center gap-2 md:flex">
-            <Link
-              href="/admin/login"
-              className="flex h-10 items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-3 text-sm font-medium text-zinc-200 transition hover:border-yellow-400/60 hover:text-yellow-400"
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={handleOpenCart}
+              aria-label={`Abrir carrinho com ${totalItems} itens`}
+              className="relative flex h-11 min-w-11 items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-3 text-white transition hover:border-yellow-400 hover:text-yellow-400"
             >
-              <ShieldCheck size={17} />
-              <span className="hidden xl:inline">
-                Painel
+              <ShoppingCart size={20} />
+
+              <span className="hidden text-sm font-semibold sm:inline">
+                Carrinho
               </span>
-            </Link>
 
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex h-10 shrink-0 items-center gap-2 rounded-md bg-zinc-800 px-4 text-sm font-medium text-zinc-100 transition-colors hover:bg-zinc-700"
+              {isHydrated && totalItems > 0 && (
+                <span className="absolute -right-2 -top-2 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-yellow-400 px-1 text-[10px] font-black text-black">
+                  {visibleTotal}
+                </span>
+              )}
+            </button>
+
+            <div className="hidden items-center gap-2 md:flex">
+              <Link
+                href="/admin/login"
+                className="flex h-10 items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-3 text-sm font-medium text-zinc-200 transition hover:border-yellow-400/60 hover:text-yellow-400"
+              >
+                <ShieldCheck size={17} />
+
+                <span className="hidden xl:inline">
+                  Painel
+                </span>
+              </Link>
+
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-10 shrink-0 items-center gap-2 rounded-md bg-zinc-800 px-4 text-sm font-medium text-zinc-100 transition-colors hover:bg-zinc-700"
+              >
+                <MessageCircle size={18} />
+                WhatsApp
+              </a>
+            </div>
+
+            <button
+              type="button"
+              aria-label={
+                mobileMenuOpen
+                  ? "Fechar menu"
+                  : "Abrir menu"
+              }
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-navigation"
+              onClick={() =>
+                setMobileMenuOpen(
+                  (current) => !current
+                )
+              }
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-900 text-white transition hover:border-yellow-400 hover:text-yellow-400 md:hidden"
             >
-              <MessageCircle size={18} />
-              WhatsApp
-            </a>
+              {mobileMenuOpen ? (
+                <X size={22} />
+              ) : (
+                <Menu size={22} />
+              )}
+            </button>
           </div>
-
-          <button
-            type="button"
-            aria-label={
-              mobileMenuOpen
-                ? "Fechar menu"
-                : "Abrir menu"
-            }
-            aria-expanded={mobileMenuOpen}
-            aria-controls="mobile-navigation"
-            onClick={() =>
-              setMobileMenuOpen((current) => !current)
-            }
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-900 text-white transition hover:border-yellow-400 hover:text-yellow-400 md:hidden"
-          >
-            {mobileMenuOpen ? (
-              <X size={22} />
-            ) : (
-              <Menu size={22} />
-            )}
-          </button>
         </div>
 
         {mobileMenuOpen && (
@@ -150,6 +191,23 @@ export function Header() {
               >
                 Catálogo
               </Link>
+
+              <button
+                type="button"
+                onClick={handleOpenCart}
+                className="flex items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-medium transition hover:bg-zinc-900 hover:text-yellow-400"
+              >
+                <span className="flex items-center gap-2">
+                  <ShoppingCart size={18} />
+                  Abrir carrinho
+                </span>
+
+                {isHydrated && totalItems > 0 && (
+                  <span className="rounded-full bg-yellow-400 px-2 py-0.5 text-xs font-black text-black">
+                    {visibleTotal}
+                  </span>
+                )}
+              </button>
 
               <Link
                 href="/#sobre"

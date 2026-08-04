@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -8,16 +9,15 @@ import {
   Gem,
   ImageIcon,
   MapPin,
-  MessageCircle,
   PackageCheck,
   ShieldCheck,
   Star,
   X,
 } from "lucide-react";
 
+import { ProductPurchaseActions } from "@/components/cart/ProductPurchaseActions";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
-import { FavoriteButton } from "@/components/product/FavoriteButton";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { prisma } from "@/lib/prisma";
 
@@ -29,10 +29,13 @@ type ProductPageProps = {
 
 export const dynamic = "force-dynamic";
 
-const currencyFormatter = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-});
+const currencyFormatter = new Intl.NumberFormat(
+  "pt-BR",
+  {
+    style: "currency",
+    currency: "BRL",
+  }
+);
 
 export async function generateMetadata({
   params,
@@ -65,16 +68,19 @@ export async function generateMetadata({
 
   if (!product) {
     return {
-      title: "Produto não encontrado | Guiart Games",
+      title:
+        "Produto não encontrado | Guiart Games",
     };
   }
 
   return {
     title: `${product.title} | Guiart Games`,
     description: product.description.slice(0, 160),
+
     openGraph: {
       title: product.title,
       description: product.description.slice(0, 160),
+
       images: product.images[0]?.url
         ? [
             {
@@ -95,6 +101,7 @@ export default async function ProductPage({
     where: {
       slug,
     },
+
     select: {
       id: true,
       title: true,
@@ -125,6 +132,7 @@ export default async function ProductPage({
             order: "asc",
           },
         ],
+
         select: {
           id: true,
           url: true,
@@ -138,53 +146,63 @@ export default async function ProductPage({
     notFound();
   }
 
-  const relatedProducts = await prisma.product.findMany({
-    where: {
-      id: {
-        not: product.id,
-      },
-      categoryId: product.categoryId,
-      stock: {
-        gt: 0,
-      },
-    },
-    orderBy: [
-      {
-        featured: "desc",
-      },
-      {
-        createdAt: "desc",
-      },
-    ],
-    take: 3,
-    select: {
-      id: true,
-      title: true,
-      slug: true,
-      price: true,
-      console: true,
-      rarity: true,
-      images: {
-        orderBy: [
-          {
-            isCover: "desc",
-          },
-          {
-            order: "asc",
-          },
-        ],
-        take: 1,
-        select: {
-          url: true,
-          alt: true,
+  const relatedProducts =
+    await prisma.product.findMany({
+      where: {
+        id: {
+          not: product.id,
+        },
+
+        categoryId: product.categoryId,
+
+        stock: {
+          gt: 0,
         },
       },
-    },
-  });
 
-  const price = currencyFormatter.format(
-    Number(product.price)
-  );
+      orderBy: [
+        {
+          featured: "desc",
+        },
+        {
+          createdAt: "desc",
+        },
+      ],
+
+      take: 3,
+
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        price: true,
+        console: true,
+        rarity: true,
+
+        images: {
+          orderBy: [
+            {
+              isCover: "desc",
+            },
+            {
+              order: "asc",
+            },
+          ],
+
+          take: 1,
+
+          select: {
+            url: true,
+            alt: true,
+          },
+        },
+      },
+    });
+
+  const numericPrice = Number(product.price);
+
+  const price =
+    currencyFormatter.format(numericPrice);
 
   const whatsappMessage = encodeURIComponent(
     `Olá! Tenho interesse no produto "${product.title}" por ${price}. Ele ainda está disponível?`
@@ -226,7 +244,10 @@ export default async function ProductPage({
 
               {product.featured && (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-yellow-400 px-4 py-2 text-xs font-bold uppercase tracking-wider text-black">
-                  <Star size={14} fill="currentColor" />
+                  <Star
+                    size={14}
+                    fill="currentColor"
+                  />
                   Destaque
                 </span>
               )}
@@ -239,7 +260,7 @@ export default async function ProductPage({
               )}
             </div>
 
-            <h1 className="mt-6 text-4xl font-black leading-tight sm:text-5xl">
+            <h1 className="mt-6 break-words text-4xl font-black leading-tight sm:text-5xl">
               {product.title}
             </h1>
 
@@ -247,7 +268,7 @@ export default async function ProductPage({
               {product.console}
             </p>
 
-            <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+            <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-5 sm:p-6">
               <p className="text-sm text-zinc-500">
                 Preço
               </p>
@@ -274,29 +295,20 @@ export default async function ProductPage({
                   : "Produto indisponível"}
               </div>
 
-              <div className="mt-6 flex gap-3">
-                {isAvailable ? (
-                  <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 font-bold text-white transition hover:bg-emerald-400"
-                  >
-                    <MessageCircle size={20} />
-                    Comprar pelo WhatsApp
-                  </a>
-                ) : (
-                  <button
-                    type="button"
-                    disabled
-                    className="inline-flex min-h-12 flex-1 cursor-not-allowed items-center justify-center rounded-xl bg-zinc-800 px-5 py-3 font-bold text-zinc-500"
-                  >
-                    Produto indisponível
-                  </button>
-                )}
-
-                <FavoriteButton productId={product.id} />
-              </div>
+              <ProductPurchaseActions
+                product={{
+                  id: product.id,
+                  title: product.title,
+                  slug: product.slug,
+                  price: numericPrice,
+                  stock: product.stock,
+                  imageUrl:
+                    product.images[0]?.url ?? null,
+                  console: product.console,
+                  condition: product.condition,
+                }}
+                whatsappUrl={whatsappUrl}
+              />
             </div>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
@@ -310,14 +322,18 @@ export default async function ProductPage({
               <ProductInfo
                 icon={<Box size={20} />}
                 label="Possui caixa"
-                value={product.hasBox ? "Sim" : "Não"}
+                value={
+                  product.hasBox ? "Sim" : "Não"
+                }
                 positive={product.hasBox}
               />
 
               <ProductInfo
                 icon={<PackageCheck size={20} />}
                 label="Possui manual"
-                value={product.hasManual ? "Sim" : "Não"}
+                value={
+                  product.hasManual ? "Sim" : "Não"
+                }
                 positive={product.hasManual}
               />
             </div>
@@ -334,8 +350,9 @@ export default async function ProductPage({
                 </p>
 
                 <p className="mt-1 text-sm leading-6 text-zinc-500">
-                  Rua dos Buritis, 54, Loja 9 — Jardim Oriental,
-                  São Paulo. Próximo ao Metrô Jabaquara.
+                  Rua dos Buritis, 54, Loja 9 —
+                  Jardim Oriental, São Paulo.
+                  Próximo ao Metrô Jabaquara.
                 </p>
               </div>
             </div>
@@ -367,59 +384,63 @@ export default async function ProductPage({
             </div>
 
             <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {relatedProducts.map((relatedProduct) => {
-                const relatedImage =
-                  relatedProduct.images[0];
+              {relatedProducts.map(
+                (relatedProduct) => {
+                  const relatedImage =
+                    relatedProduct.images[0];
 
-                return (
-                  <Link
-                    key={relatedProduct.id}
-                    href={`/produto/${relatedProduct.slug}`}
-                    className="group overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 transition hover:-translate-y-1 hover:border-yellow-400/40"
-                  >
-                    <div className="relative flex aspect-[4/3] items-center justify-center bg-zinc-900">
-                      {relatedImage ? (
-                        <img
-                          src={relatedImage.url}
-                          alt={
-                            relatedImage.alt ??
-                            relatedProduct.title
-                          }
-                          className="h-full w-full object-contain p-4 transition duration-300 group-hover:scale-105"
-                        />
-                      ) : (
-                        <ImageIcon
-                          size={42}
-                          className="text-zinc-700"
-                        />
-                      )}
-
-                      {relatedProduct.rarity && (
-                        <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-purple-600 px-3 py-1 text-xs font-bold">
-                          <Gem size={13} />
-                          Raridade
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="p-5">
-                      <p className="text-sm text-yellow-400">
-                        {relatedProduct.console}
-                      </p>
-
-                      <h3 className="mt-2 text-lg font-bold transition group-hover:text-yellow-400">
-                        {relatedProduct.title}
-                      </h3>
-
-                      <p className="mt-4 text-xl font-black">
-                        {currencyFormatter.format(
-                          Number(relatedProduct.price)
+                  return (
+                    <Link
+                      key={relatedProduct.id}
+                      href={`/produto/${relatedProduct.slug}`}
+                      className="group overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 transition hover:-translate-y-1 hover:border-yellow-400/40"
+                    >
+                      <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-zinc-900">
+                        {relatedImage ? (
+                          <img
+                            src={relatedImage.url}
+                            alt={
+                              relatedImage.alt ??
+                              relatedProduct.title
+                            }
+                            className="h-full w-full object-contain p-4 transition duration-300 group-hover:scale-105"
+                          />
+                        ) : (
+                          <ImageIcon
+                            size={42}
+                            className="text-zinc-700"
+                          />
                         )}
-                      </p>
-                    </div>
-                  </Link>
-                );
-              })}
+
+                        {relatedProduct.rarity && (
+                          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-purple-600 px-3 py-1 text-xs font-bold">
+                            <Gem size={13} />
+                            Raridade
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="p-5">
+                        <p className="text-sm text-yellow-400">
+                          {relatedProduct.console}
+                        </p>
+
+                        <h3 className="mt-2 text-lg font-bold transition group-hover:text-yellow-400">
+                          {relatedProduct.title}
+                        </h3>
+
+                        <p className="mt-4 text-xl font-black">
+                          {currencyFormatter.format(
+                            Number(
+                              relatedProduct.price
+                            )
+                          )}
+                        </p>
+                      </div>
+                    </Link>
+                  );
+                }
+              )}
             </div>
           </section>
         )}
@@ -431,7 +452,7 @@ export default async function ProductPage({
 }
 
 type ProductInfoProps = {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   value: string;
   positive: boolean;
@@ -461,9 +482,15 @@ function ProductInfo({
 
       <p className="mt-1 flex items-center gap-1.5 font-bold">
         {positive ? (
-          <Check size={15} className="text-emerald-400" />
+          <Check
+            size={15}
+            className="text-emerald-400"
+          />
         ) : (
-          <X size={15} className="text-zinc-600" />
+          <X
+            size={15}
+            className="text-zinc-600"
+          />
         )}
 
         {value}

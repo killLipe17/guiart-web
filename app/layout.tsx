@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { Space_Grotesk } from "next/font/google";
+
+import { CartDrawer } from "@/components/cart/CartDrawer";
+import { CartProvider } from "@/components/cart/CartProvider";
+
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -15,14 +20,20 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className="h-full antialiased">
+    <html
+      lang="pt-BR"
+      className="h-full antialiased"
+    >
       <body
-        className={`${spaceGrotesk.className} min-h-full flex flex-col`}
+        className={`${spaceGrotesk.className} flex min-h-full flex-col`}
       >
-        {children}
+        <CartProvider>
+          {children}
+          <CartDrawer />
+        </CartProvider>
       </body>
     </html>
   );
