@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { Fragment } from "react";
+import type { Prisma } from "@prisma/client";
 import {
+  ChevronLeft,
+  ChevronRight,
   Gem,
   ImageIcon,
   PackageCheck,
+  RotateCcw,
   Search,
+  SlidersHorizontal,
   Star,
 } from "lucide-react";
 
@@ -13,28 +20,302 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Catálogo | Guiart Games",
   description:
     "Games, consoles, acessórios e colecionáveis disponíveis na Guiart Games.",
 };
+
+const PRODUCTS_PER_PAGE = 9;
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
 });
 
-export default async function CatalogPage() {
-  const products = await prisma.product.findMany({
-    where: {
-      stock: {
-        gt: 0,
-      },
+type CatalogOrder =
+  | "recent"
+  | "price-asc"
+  | "price-desc"
+  | "name";
+
+type CatalogSearchParams = {
+  search?: string | string[];
+  category?: string | string[];
+  console?: string | string[];
+  order?: string | string[];
+  page?: string | string[];
+};
+
+type CatalogPageProps = {
+  searchParams: Promise<CatalogSearchParams>;
+};
+
+type CatalogFilters = {
+  search: string;
+  category: string;
+  consoleFilter: string;
+  order: CatalogOrder;
+};
+
+function getStringParam(
+  value: string | string[] | undefined
+) {
+  if (Array.isArray(value)) {
+    return value[0] ?? "";
+  }
+
+  return value ?? "";
+}
+
+function getPageParam(
+  value: string | string[] | undefined
+) {
+  const parsedPage = Number(getStringParam(value));
+
+  if (!Number.isInteger(parsedPage) || parsedPage < 1) {
+    return 1;
+  }
+
+  return parsedPage;
+}
+
+function getCatalogOrder(value: string): CatalogOrder {
+  const acceptedOrders: CatalogOrder[] = [
+    "recent",
+    "price-asc",
+    "price-desc",
+    "name",
+  ];
+
+  if (acceptedOrders.includes(value as CatalogOrder)) {
+    return value as CatalogOrder;
+  }
+
+  return "recent";
+}
+
+function getOrderBy(
+  order: CatalogOrder
+): Prisma.ProductOrderByWithRelationInput[] {
+  switch (order) {
+    case "price-asc":
+      return [
+        {
+          price: "asc",
+        },
+        {
+          createdAt: "desc",
+        },
+      ];
+
+    case "price-desc":
+      return [
+        {
+          price: "desc",
+        },
+        {
+          createdAt: "desc",
+        },
+      ];
+
+    case "name":
+      return [
+        {
+          title: "asc",
+        },
+      ];
+
+    default:
+      return [
+        {
+          createdAt: "desc",
+        },
+      ];
+  }
+}
+
+function createCatalogHref(
+  filters: CatalogFilters,
+  page: number
+) {
+  const params = new URLSearchParams();
+
+  if (filters.search) {
+    params.set("search", filters.search);
+  }
+
+  if (filters.category) {
+    params.set("category", filters.category);
+  }
+
+  if (filters.consoleFilter) {
+    params.set("console", filters.consoleFilter);
+  }
+
+  if (filters.order !== "recent") {
+    params.set("order", filters.order);
+  }
+
+  if (page > 1) {
+    params.set("page", String(page));
+  }
+
+  const queryString = params.toString();
+
+  return queryString
+    ? `/catalogo?${queryString}`
+    : "/catalogo";
+}
+
+export default async function CatalogPage({
+  searchParams,
+}: CatalogPageProps) {
+  const params = await searchParams;
+
+  const search = getStringParam(params.search).trim();
+  const category = getStringParam(params.category).trim();
+  const consoleFilter = getStringParam(
+    params.console
+  ).trim();
+
+  const order = getCatalogOrder(
+    getStringParam(params.order)
+  );
+
+  const requestedPage = getPageParam(params.page);
+
+  const filters: CatalogFilters = {
+    search,
+    category,
+    consoleFilter,
+    order,
+  };
+
+  const where: Prisma.ProductWhereInput = {
+    stock: {
+      gt: 0,
     },
 
-    orderBy: {
-      createdAt: "desc",
-    },
+    ...(category
+      ? {
+          category: {
+            is: {
+              name: category,
+            },
+          },
+        }
+      : {}),
+
+    ...(consoleFilter
+      ? {
+          console: consoleFilter,
+        }
+      : {}),
+
+    ...(search
+      ? {
+          OR: [
+            {
+              title: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+            {
+              description: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+            {
+              console: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+            {
+              condition: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+            {
+              category: {
+                is: {
+                  name: {
+                    contains: search,
+                    mode: "insensitive",
+                  },
+                },
+              },
+            },
+          ],
+        }
+      : {}),
+  };
+
+  const [
+    totalProducts,
+    categories,
+    availableConsoles,
+  ] = await Promise.all([
+    prisma.product.count({
+      where,
+    }),
+
+    prisma.category.findMany({
+      where: {
+        products: {
+          some: {
+            stock: {
+              gt: 0,
+            },
+          },
+        },
+      },
+      orderBy: {
+        name: "asc",
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    }),
+
+    prisma.product.findMany({
+      where: {
+        stock: {
+          gt: 0,
+        },
+      },
+      distinct: ["console"],
+      orderBy: {
+        console: "asc",
+      },
+      select: {
+        console: true,
+      },
+    }),
+  ]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(totalProducts / PRODUCTS_PER_PAGE)
+  );
+
+  const currentPage = Math.min(
+    requestedPage,
+    totalPages
+  );
+
+  const products = await prisma.product.findMany({
+    where,
+
+    orderBy: getOrderBy(order),
+
+    skip: (currentPage - 1) * PRODUCTS_PER_PAGE,
+    take: PRODUCTS_PER_PAGE,
 
     select: {
       id: true,
@@ -51,10 +332,10 @@ export default async function CatalogPage() {
       rarity: true,
 
       category: {
-  select: {
-    name: true,
-  },
-},
+        select: {
+          name: true,
+        },
+      },
 
       images: {
         orderBy: [
@@ -65,15 +346,36 @@ export default async function CatalogPage() {
             order: "asc",
           },
         ],
-
         take: 1,
-
         select: {
           url: true,
           alt: true,
         },
       },
     },
+  });
+
+  const hasActiveFilters = Boolean(
+    search ||
+      category ||
+      consoleFilter ||
+      order !== "recent"
+  );
+
+  const visiblePages = Array.from(
+    new Set(
+      [
+        1,
+        currentPage - 1,
+        currentPage,
+        currentPage + 1,
+        totalPages,
+      ].filter(
+        (page) => page >= 1 && page <= totalPages
+      )
+    )
+  ).sort((firstPage, secondPage) => {
+    return firstPage - secondPage;
   });
 
   return (
@@ -94,22 +396,212 @@ export default async function CatalogPage() {
             </h1>
 
             <p className="mt-5 max-w-2xl text-base leading-7 text-zinc-400 sm:text-lg">
-              Produtos reais disponíveis na loja física, com informações
-              detalhadas sobre conservação, caixa, manual e estoque.
+              Consulte os produtos disponíveis na loja,
+              pesquise por nome e filtre por categoria ou
+              plataforma.
             </p>
 
             <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-950 px-4 py-2 text-sm text-zinc-400">
-              <PackageCheck size={17} className="text-emerald-400" />
+              <PackageCheck
+                size={17}
+                className="text-emerald-400"
+              />
 
-              {products.length}{" "}
-              {products.length === 1
-                ? "produto disponível"
-                : "produtos disponíveis"}
+              {totalProducts}{" "}
+              {totalProducts === 1
+                ? "produto encontrado"
+                : "produtos encontrados"}
             </div>
           </div>
         </section>
 
+        <section className="mx-auto max-w-7xl px-4 pt-10 sm:px-6">
+          <form
+            action="/catalogo"
+            method="get"
+            className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 sm:p-6"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-yellow-400/10 text-yellow-400">
+                <SlidersHorizontal size={21} />
+              </div>
+
+              <div>
+                <h2 className="font-bold">
+                  Buscar e filtrar
+                </h2>
+
+                <p className="text-sm text-zinc-500">
+                  Refine os produtos exibidos no catálogo.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-4 lg:grid-cols-[2fr_1fr_1fr_1fr_auto]">
+              <div>
+                <label
+                  htmlFor="search"
+                  className="text-sm font-medium text-zinc-400"
+                >
+                  Busca
+                </label>
+
+                <div className="relative mt-2">
+                  <Search
+                    size={18}
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500"
+                  />
+
+                  <input
+                    id="search"
+                    name="search"
+                    type="search"
+                    defaultValue={search}
+                    placeholder="Nome, console, categoria..."
+                    className="w-full rounded-xl border border-zinc-700 bg-zinc-900 py-3 pl-11 pr-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-yellow-400"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="category"
+                  className="text-sm font-medium text-zinc-400"
+                >
+                  Categoria
+                </label>
+
+                <select
+                  id="category"
+                  name="category"
+                  defaultValue={category}
+                  className="mt-2 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-white outline-none transition focus:border-yellow-400"
+                >
+                  <option value="">
+                    Todas
+                  </option>
+
+                  {categories.map((categoryOption) => (
+                    <option
+                      key={categoryOption.id}
+                      value={categoryOption.name}
+                    >
+                      {categoryOption.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="console"
+                  className="text-sm font-medium text-zinc-400"
+                >
+                  Plataforma
+                </label>
+
+                <select
+                  id="console"
+                  name="console"
+                  defaultValue={consoleFilter}
+                  className="mt-2 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-white outline-none transition focus:border-yellow-400"
+                >
+                  <option value="">
+                    Todas
+                  </option>
+
+                  {availableConsoles.map(
+                    (consoleOption) => (
+                      <option
+                        key={consoleOption.console}
+                        value={consoleOption.console}
+                      >
+                        {consoleOption.console}
+                      </option>
+                    )
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="order"
+                  className="text-sm font-medium text-zinc-400"
+                >
+                  Ordenação
+                </label>
+
+                <select
+                  id="order"
+                  name="order"
+                  defaultValue={order}
+                  className="mt-2 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-white outline-none transition focus:border-yellow-400"
+                >
+                  <option value="recent">
+                    Mais recentes
+                  </option>
+
+                  <option value="price-asc">
+                    Menor preço
+                  </option>
+
+                  <option value="price-desc">
+                    Maior preço
+                  </option>
+
+                  <option value="name">
+                    Nome A–Z
+                  </option>
+                </select>
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  type="submit"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-yellow-400 px-6 py-3 font-bold text-black transition hover:bg-yellow-300 lg:w-auto"
+                >
+                  <Search size={18} />
+                  Aplicar
+                </button>
+              </div>
+            </div>
+
+            {hasActiveFilters && (
+              <div className="mt-5 border-t border-zinc-900 pt-5">
+                <Link
+                  href="/catalogo"
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-400 transition hover:text-yellow-400"
+                >
+                  <RotateCcw size={16} />
+                  Limpar busca e filtros
+                </Link>
+              </div>
+            )}
+          </form>
+        </section>
+
         <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
+          <div className="mb-7 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-2xl font-black">
+                Produtos encontrados
+              </h2>
+
+              <p className="mt-1 text-sm text-zinc-500">
+                {totalProducts}{" "}
+                {totalProducts === 1
+                  ? "resultado"
+                  : "resultados"}
+              </p>
+            </div>
+
+            {totalProducts > 0 && (
+              <p className="text-sm text-zinc-500">
+                Página {currentPage} de {totalPages}
+              </p>
+            )}
+          </div>
+
           {products.length === 0 ? (
             <div className="flex min-h-96 items-center justify-center rounded-3xl border border-dashed border-zinc-800 bg-zinc-950 px-6">
               <div className="max-w-md text-center">
@@ -119,13 +611,21 @@ export default async function CatalogPage() {
                 />
 
                 <h2 className="mt-5 text-2xl font-bold">
-                  Nenhum produto disponível
+                  Nenhum produto encontrado
                 </h2>
 
                 <p className="mt-3 leading-7 text-zinc-500">
-                  Os produtos cadastrados aparecerão aqui quando tiverem
-                  estoque disponível.
+                  Tente pesquisar outro nome ou remover
+                  alguns filtros.
                 </p>
+
+                <Link
+                  href="/catalogo"
+                  className="mt-6 inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-5 py-3 font-bold text-black transition hover:bg-yellow-300"
+                >
+                  <RotateCcw size={18} />
+                  Limpar filtros
+                </Link>
               </div>
             </div>
           ) : (
@@ -195,7 +695,8 @@ export default async function CatalogPage() {
                         </h2>
 
                         <p className="mt-2 text-sm text-zinc-500">
-                          {product.console} • {product.condition}
+                          {product.console} •{" "}
+                          {product.condition}
                         </p>
 
                         <p className="mt-4 line-clamp-2 min-h-12 text-sm leading-6 text-zinc-400">
@@ -224,14 +725,18 @@ export default async function CatalogPage() {
                           <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2 text-center text-zinc-400">
                             Caixa:{" "}
                             <strong className="text-white">
-                              {product.hasBox ? "Sim" : "Não"}
+                              {product.hasBox
+                                ? "Sim"
+                                : "Não"}
                             </strong>
                           </div>
 
                           <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2 text-center text-zinc-400">
                             Manual:{" "}
                             <strong className="text-white">
-                              {product.hasManual ? "Sim" : "Não"}
+                              {product.hasManual
+                                ? "Sim"
+                                : "Não"}
                             </strong>
                           </div>
                         </div>
@@ -245,6 +750,87 @@ export default async function CatalogPage() {
                 );
               })}
             </div>
+          )}
+
+          {totalPages > 1 && (
+            <nav
+              aria-label="Paginação do catálogo"
+              className="mt-12 flex flex-wrap items-center justify-center gap-2"
+            >
+              {currentPage > 1 ? (
+                <Link
+                  href={createCatalogHref(
+                    filters,
+                    currentPage - 1
+                  )}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-950 px-4 text-sm font-semibold text-zinc-300 transition hover:border-yellow-400 hover:text-yellow-400"
+                >
+                  <ChevronLeft size={18} />
+                  Anterior
+                </Link>
+              ) : (
+                <span className="inline-flex h-11 cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-zinc-900 bg-zinc-950 px-4 text-sm font-semibold text-zinc-700">
+                  <ChevronLeft size={18} />
+                  Anterior
+                </span>
+              )}
+
+              {visiblePages.map((page, index) => {
+                const previousPage =
+                  visiblePages[index - 1];
+
+                const hasGap =
+                  previousPage !== undefined &&
+                  page - previousPage > 1;
+
+                return (
+                  <Fragment key={page}>
+                    {hasGap && (
+                      <span className="flex h-11 w-8 items-center justify-center text-zinc-600">
+                        …
+                      </span>
+                    )}
+
+                    {page === currentPage ? (
+                      <span
+                        aria-current="page"
+                        className="flex h-11 min-w-11 items-center justify-center rounded-xl bg-yellow-400 px-3 font-bold text-black"
+                      >
+                        {page}
+                      </span>
+                    ) : (
+                      <Link
+                        href={createCatalogHref(
+                          filters,
+                          page
+                        )}
+                        className="flex h-11 min-w-11 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950 px-3 font-semibold text-zinc-300 transition hover:border-yellow-400 hover:text-yellow-400"
+                      >
+                        {page}
+                      </Link>
+                    )}
+                  </Fragment>
+                );
+              })}
+
+              {currentPage < totalPages ? (
+                <Link
+                  href={createCatalogHref(
+                    filters,
+                    currentPage + 1
+                  )}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-950 px-4 text-sm font-semibold text-zinc-300 transition hover:border-yellow-400 hover:text-yellow-400"
+                >
+                  Próxima
+                  <ChevronRight size={18} />
+                </Link>
+              ) : (
+                <span className="inline-flex h-11 cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-zinc-900 bg-zinc-950 px-4 text-sm font-semibold text-zinc-700">
+                  Próxima
+                  <ChevronRight size={18} />
+                </span>
+              )}
+            </nav>
           )}
         </section>
       </main>
