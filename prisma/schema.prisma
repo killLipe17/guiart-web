@@ -3,8 +3,17 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PAID
+  COMPLETED
+  CANCELLED
 }
 
 model Category {
@@ -14,24 +23,24 @@ model Category {
 }
 
 model Product {
-  id          String   @id @default(cuid())
+  id          String         @id @default(cuid())
   title       String
-  slug        String   @unique
-  description String   @db.Text
-  price       Decimal  @db.Decimal(10, 2)
+  slug        String         @unique
+  description String         @db.Text
+  price       Decimal        @db.Decimal(10, 2)
   console     String
   condition   String
-  hasBox      Boolean  @default(false)
-  hasManual   Boolean  @default(false)
-  featured    Boolean  @default(false)
-  rarity      Boolean  @default(false)
-  stock       Int      @default(1)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  categoryId String
-  category   Category       @relation(fields: [categoryId], references: [id])
-  images     ProductImage[]
+  hasBox      Boolean        @default(false)
+  hasManual   Boolean        @default(false)
+  featured    Boolean        @default(false)
+  rarity      Boolean        @default(false)
+  stock       Int            @default(1)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  categoryId  String
+  category    Category       @relation(fields: [categoryId], references: [id])
+  images      ProductImage[]
+  orderItems  OrderItem[]
 }
 
 model ProductImage {
@@ -42,9 +51,41 @@ model ProductImage {
   order       Int      @default(0)
   isCover     Boolean  @default(false)
   createdAt   DateTime @default(now())
-
-  productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId, order])
+}
+
+model Order {
+  id           String      @id @default(cuid())
+  number       Int         @unique @default(autoincrement())
+  customerName String
+  notes        String?     @db.Text
+  status       OrderStatus @default(PENDING)
+  total        Decimal     @db.Decimal(10, 2)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  items        OrderItem[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  title     String
+  slug      String
+  console   String?
+  imageUrl  String?
+  price     Decimal  @db.Decimal(10, 2)
+  quantity  Int
+  subtotal  Decimal  @db.Decimal(10, 2)
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([productId])
 }

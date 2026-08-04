@@ -9,17 +9,44 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
 
 import { useCart } from "@/components/cart/CartProvider";
 
-const currencyFormatter = new Intl.NumberFormat(
-  "pt-BR",
-  {
+const currencyFormatter =
+  new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-  }
-);
+  });
+
+type CreatedOrderItem = {
+  productId: string;
+  title: string;
+  slug: string;
+  console: string | null;
+  imageUrl: string | null;
+  price: number;
+  quantity: number;
+  subtotal: number;
+};
+
+type CreatedOrderResponse = {
+  order: {
+    id: string;
+    number: number;
+    status: string;
+    total: number;
+    createdAt: string;
+    items: CreatedOrderItem[];
+  };
+};
+
+type OrderErrorResponse = {
+  error: string;
+};
 
 export function CartDrawer() {
   const {
@@ -32,13 +59,23 @@ export function CartDrawer() {
     clearCart,
   } = useCart();
 
-  const [customerName, setCustomerName] =
+  const [
+    customerName,
+    setCustomerName,
+  ] = useState("");
+
+  const [notes, setNotes] =
     useState("");
 
-  const [notes, setNotes] = useState("");
+  const [
+    validationMessage,
+    setValidationMessage,
+  ] = useState("");
 
-  const [validationMessage, setValidationMessage] =
-    useState("");
+  const [
+    isSubmitting,
+    setIsSubmitting,
+  ] = useState(false);
 
   useEffect(() => {
     if (!isCartOpen) {
@@ -48,9 +85,12 @@ export function CartDrawer() {
     const previousOverflow =
       document.body.style.overflow;
 
-    document.body.style.overflow = "hidden";
+    document.body.style.overflow =
+      "hidden";
 
-    function handleKeyDown(event: KeyboardEvent) {
+    function handleKeyDown(
+      event: KeyboardEvent
+    ) {
       if (event.key === "Escape") {
         closeCart();
       }
@@ -79,11 +119,13 @@ export function CartDrawer() {
 
     if (confirmed) {
       clearCart();
+      setValidationMessage("");
     }
   }
 
-  function handleCheckout() {
-    const normalizedName = customerName.trim();
+  async function handleCheckout() {
+    const normalizedName =
+      customerName.trim();
 
     if (!normalizedName) {
       setValidationMessage(
@@ -102,63 +144,162 @@ export function CartDrawer() {
     }
 
     setValidationMessage("");
+    setIsSubmitting(true);
 
-    const siteOrigin = window.location.origin;
+    const whatsappWindow =
+      window.open(
+        "about:blank",
+        "_blank"
+      );
 
-    const productLines = items.map(
-      (item, index) => {
-        const subtotal =
-          item.price * item.quantity;
+    if (whatsappWindow) {
+      whatsappWindow.opener = null;
+    }
 
-        return [
-          `${index + 1}. ${item.title}`,
-          item.console
-            ? `Plataforma: ${item.console}`
-            : null,
-          `Quantidade: ${item.quantity}`,
-          `Valor unitário: ${currencyFormatter.format(
-            item.price
-          )}`,
-          `Subtotal: ${currencyFormatter.format(
-            subtotal
-          )}`,
-          `Produto: ${siteOrigin}/produto/${item.slug}`,
-        ]
-          .filter(Boolean)
-          .join("\n");
+    try {
+      const response = await fetch(
+        "/api/pedidos",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            customerName:
+              normalizedName,
+
+            notes: notes.trim(),
+
+            items: items.map(
+              (item) => ({
+                productId: item.id,
+                quantity:
+                  item.quantity,
+              })
+            ),
+          }),
+        }
+      );
+
+      const responseData:
+        | CreatedOrderResponse
+        | OrderErrorResponse
+        | null = await response
+        .json()
+        .catch(() => null);
+
+      if (
+        !response.ok ||
+        !responseData ||
+        !("order" in responseData)
+      ) {
+        const errorMessage =
+          responseData &&
+          "error" in responseData &&
+          typeof responseData.error ===
+            "string"
+            ? responseData.error
+            : "Não foi possível registrar o pedido.";
+
+        throw new Error(errorMessage);
       }
-    );
 
-    const message = [
-      "Olá! Gostaria de fazer um pedido na Guiart Games.",
-      "",
-      `Cliente: ${normalizedName}`,
-      "",
-      ...productLines.flatMap((productLine) => [
-        productLine,
+      const { order } = responseData;
+      const siteOrigin =
+        window.location.origin;
+
+      const productLines =
+        order.items.map(
+          (item, index) => {
+            return [
+              `${index + 1}. ${item.title}`,
+
+              item.console
+                ? `Plataforma: ${item.console}`
+                : null,
+
+              `Quantidade: ${item.quantity}`,
+
+              `Valor unitário: ${currencyFormatter.format(
+                item.price
+              )}`,
+
+              `Subtotal: ${currencyFormatter.format(
+                item.subtotal
+              )}`,
+
+              `Produto: ${siteOrigin}/produto/${item.slug}`,
+            ]
+              .filter(Boolean)
+              .join("\n");
+          }
+        );
+
+      const message = [
+        "Olá! Gostaria de confirmar um pedido na Guiart Games.",
         "",
-      ]),
-      `Total estimado: ${currencyFormatter.format(
-        totalPrice
-      )}`,
-      "",
-      notes.trim()
-        ? `Observações: ${notes.trim()}`
-        : "Observações: nenhuma.",
-      "",
-      "Aguardo a confirmação da disponibilidade e das formas de pagamento.",
-    ].join("\n");
+        `Pedido #${order.number}`,
+        `Cliente: ${normalizedName}`,
+        "",
+        ...productLines.flatMap(
+          (productLine) => [
+            productLine,
+            "",
+          ]
+        ),
+        `Total: ${currencyFormatter.format(
+          order.total
+        )}`,
+        "",
+        notes.trim()
+          ? `Observações: ${notes.trim()}`
+          : "Observações: nenhuma.",
+        "",
+        "O pedido foi registrado no site e aguarda confirmação da loja.",
+      ].join("\n");
 
-    const whatsappUrl =
-      `https://wa.me/5511962222045?text=${encodeURIComponent(
-        message
-      )}`;
+      const whatsappUrl =
+        `https://wa.me/5511962222045?text=${encodeURIComponent(
+          message
+        )}`;
 
-    window.open(
-      whatsappUrl,
-      "_blank",
-      "noopener,noreferrer"
-    );
+      if (
+        whatsappWindow &&
+        !whatsappWindow.closed
+      ) {
+        whatsappWindow.location.href =
+          whatsappUrl;
+      } else {
+        window.location.href =
+          whatsappUrl;
+      }
+
+      clearCart();
+      setCustomerName("");
+      setNotes("");
+      closeCart();
+    } catch (error) {
+      if (
+        whatsappWindow &&
+        !whatsappWindow.closed
+      ) {
+        whatsappWindow.close();
+      }
+
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível finalizar o pedido.";
+
+      setValidationMessage(
+        errorMessage
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   if (!isCartOpen) {
@@ -183,7 +324,9 @@ export function CartDrawer() {
         <header className="flex items-center justify-between border-b border-zinc-800 px-4 py-4 sm:px-6">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-yellow-400/10 text-yellow-400">
-              <ShoppingCart size={20} />
+              <ShoppingCart
+                size={20}
+              />
             </div>
 
             <div>
@@ -202,8 +345,9 @@ export function CartDrawer() {
           <button
             type="button"
             onClick={closeCart}
+            disabled={isSubmitting}
             aria-label="Fechar carrinho"
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-800 text-zinc-400 transition hover:text-white"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-800 text-zinc-400 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             <X size={20} />
           </button>
@@ -222,8 +366,9 @@ export function CartDrawer() {
               </h3>
 
               <p className="mt-2 text-sm leading-6 text-zinc-500">
-                Adicione produtos do catálogo para
-                montar seu pedido.
+                Adicione produtos do
+                catálogo para montar seu
+                pedido.
               </p>
 
               <Link
@@ -247,12 +392,16 @@ export function CartDrawer() {
                     <div className="flex gap-3">
                       <Link
                         href={`/produto/${item.slug}`}
-                        onClick={closeCart}
+                        onClick={
+                          closeCart
+                        }
                         className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-zinc-900"
                       >
                         {item.imageUrl ? (
                           <img
-                            src={item.imageUrl}
+                            src={
+                              item.imageUrl
+                            }
                             alt={item.title}
                             className="h-full w-full object-contain"
                           />
@@ -269,7 +418,9 @@ export function CartDrawer() {
                           <div className="min-w-0">
                             <Link
                               href={`/produto/${item.slug}`}
-                              onClick={closeCart}
+                              onClick={
+                                closeCart
+                              }
                               className="font-bold transition hover:text-yellow-400"
                             >
                               {item.title}
@@ -277,20 +428,29 @@ export function CartDrawer() {
 
                             {item.console && (
                               <p className="mt-1 text-xs text-zinc-500">
-                                {item.console}
+                                {
+                                  item.console
+                                }
                               </p>
                             )}
                           </div>
 
                           <button
                             type="button"
+                            disabled={
+                              isSubmitting
+                            }
                             onClick={() =>
-                              removeItem(item.id)
+                              removeItem(
+                                item.id
+                              )
                             }
                             aria-label={`Remover ${item.title}`}
-                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-red-500/10 hover:text-red-400"
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            <Trash2 size={16} />
+                            <Trash2
+                              size={16}
+                            />
                           </button>
                         </div>
 
@@ -306,17 +466,24 @@ export function CartDrawer() {
                       <div className="flex items-center rounded-xl border border-zinc-800 bg-zinc-950">
                         <button
                           type="button"
-                          disabled={item.quantity <= 1}
+                          disabled={
+                            isSubmitting ||
+                            item.quantity <=
+                              1
+                          }
                           onClick={() =>
                             updateQuantity(
                               item.id,
-                              item.quantity - 1
+                              item.quantity -
+                                1
                             )
                           }
                           aria-label="Diminuir quantidade"
                           className="flex h-9 w-9 items-center justify-center text-zinc-400 transition hover:text-white disabled:cursor-not-allowed disabled:text-zinc-700"
                         >
-                          <Minus size={15} />
+                          <Minus
+                            size={15}
+                          />
                         </button>
 
                         <span className="min-w-8 text-center text-sm font-bold">
@@ -326,18 +493,23 @@ export function CartDrawer() {
                         <button
                           type="button"
                           disabled={
-                            item.quantity >= item.stock
+                            isSubmitting ||
+                            item.quantity >=
+                              item.stock
                           }
                           onClick={() =>
                             updateQuantity(
                               item.id,
-                              item.quantity + 1
+                              item.quantity +
+                                1
                             )
                           }
                           aria-label="Aumentar quantidade"
                           className="flex h-9 w-9 items-center justify-center text-zinc-400 transition hover:text-white disabled:cursor-not-allowed disabled:text-zinc-700"
                         >
-                          <Plus size={15} />
+                          <Plus
+                            size={15}
+                          />
                         </button>
                       </div>
 
@@ -360,8 +532,11 @@ export function CartDrawer() {
 
               <button
                 type="button"
-                onClick={handleClearCart}
-                className="mt-5 text-sm font-medium text-zinc-500 transition hover:text-red-400"
+                disabled={isSubmitting}
+                onClick={
+                  handleClearCart
+                }
+                className="mt-5 text-sm font-medium text-zinc-500 transition hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Limpar carrinho
               </button>
@@ -378,19 +553,31 @@ export function CartDrawer() {
                   <input
                     id="cart-customer-name"
                     type="text"
-                    value={customerName}
-                    onChange={(event) => {
+                    value={
+                      customerName
+                    }
+                    disabled={
+                      isSubmitting
+                    }
+                    onChange={(
+                      event
+                    ) => {
                       setCustomerName(
-                        event.target.value
+                        event.target
+                          .value
                       );
 
-                      if (validationMessage) {
-                        setValidationMessage("");
+                      if (
+                        validationMessage
+                      ) {
+                        setValidationMessage(
+                          ""
+                        );
                       }
                     }}
                     maxLength={80}
                     placeholder="Digite seu nome"
-                    className="mt-2 h-12 w-full rounded-xl border border-zinc-800 bg-black px-4 text-sm outline-none transition placeholder:text-zinc-600 focus:border-yellow-400"
+                    className="mt-2 h-12 w-full rounded-xl border border-zinc-800 bg-black px-4 text-sm outline-none transition placeholder:text-zinc-600 focus:border-yellow-400 disabled:cursor-not-allowed disabled:opacity-60"
                   />
                 </div>
 
@@ -405,19 +592,29 @@ export function CartDrawer() {
                   <textarea
                     id="cart-notes"
                     value={notes}
-                    onChange={(event) =>
-                      setNotes(event.target.value)
+                    disabled={
+                      isSubmitting
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setNotes(
+                        event.target
+                          .value
+                      )
                     }
                     maxLength={500}
                     rows={3}
                     placeholder="Ex.: retirada na loja, dúvidas ou preferências"
-                    className="mt-2 w-full resize-none rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm outline-none transition placeholder:text-zinc-600 focus:border-yellow-400"
+                    className="mt-2 w-full resize-none rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm outline-none transition placeholder:text-zinc-600 focus:border-yellow-400 disabled:cursor-not-allowed disabled:opacity-60"
                   />
                 </div>
 
                 {validationMessage && (
-                  <p className="text-sm font-medium text-red-400">
-                    {validationMessage}
+                  <p className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-400">
+                    {
+                      validationMessage
+                    }
                   </p>
                 )}
               </div>
@@ -431,7 +628,8 @@ export function CartDrawer() {
                   </p>
 
                   <p className="mt-1 text-xs text-zinc-600">
-                    Disponibilidade será confirmada
+                    O preço será validado
+                    antes do pedido
                   </p>
                 </div>
 
@@ -444,11 +642,24 @@ export function CartDrawer() {
 
               <button
                 type="button"
-                onClick={handleCheckout}
-                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 font-bold text-white transition hover:bg-emerald-400"
+                onClick={
+                  handleCheckout
+                }
+                disabled={
+                  isSubmitting
+                }
+                aria-busy={
+                  isSubmitting
+                }
+                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 font-bold text-white transition hover:bg-emerald-400 disabled:cursor-wait disabled:bg-emerald-800 disabled:text-emerald-200"
               >
-                <MessageCircle size={20} />
-                Finalizar pelo WhatsApp
+                <MessageCircle
+                  size={20}
+                />
+
+                {isSubmitting
+                  ? "Registrando pedido..."
+                  : "Finalizar pelo WhatsApp"}
               </button>
             </footer>
           </>
