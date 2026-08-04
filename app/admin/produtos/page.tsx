@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { DeleteProductButton } from "@/components/admin/DeleteProductButton";
+import { LogoutButton } from "@/components/admin/LogoutButton";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +26,7 @@ export default async function AdminProductsPage() {
     orderBy: {
       createdAt: "desc",
     },
+
     select: {
       id: true,
       title: true,
@@ -51,11 +53,12 @@ export default async function AdminProductsPage() {
             order: "asc",
           },
         ],
+
         take: 1,
+
         select: {
           url: true,
           alt: true,
-          isCover: true,
         },
       },
 
@@ -90,18 +93,22 @@ export default async function AdminProductsPage() {
             </h1>
 
             <p className="mt-3 max-w-2xl text-zinc-400">
-              Gerencie os produtos, preços, estoque e imagens
-              da Guiart Games.
+              Gerencie os produtos, preços, estoque e imagens da
+              Guiart Games.
             </p>
           </div>
 
-          <Link
-            href="/admin/produtos/novo"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-yellow-400 px-5 py-3 font-bold text-black transition hover:bg-yellow-300"
-          >
-            <Plus size={19} />
-            Novo produto
-          </Link>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <LogoutButton />
+
+            <Link
+              href="/admin/produtos/novo"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-yellow-400 px-5 py-3 font-bold text-black transition hover:bg-yellow-300"
+            >
+              <Plus size={19} />
+              Novo produto
+            </Link>
+          </div>
         </header>
 
         <section className="mt-10 grid gap-4 sm:grid-cols-3">
@@ -174,8 +181,8 @@ export default async function AdminProductsPage() {
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-zinc-500">
-                  Cadastre o primeiro produto para começar a
-                  montar o catálogo da Guiart.
+                  Cadastre o primeiro produto para começar a montar o
+                  catálogo da Guiart.
                 </p>
 
                 <Link
@@ -245,64 +252,71 @@ export default async function AdminProductsPage() {
                         <div className="min-w-0">
                           <p className="text-xs font-semibold uppercase tracking-wider text-yellow-400">
                             {product.category.name}
+                            {product.console
+                              ? ` • ${product.console}`
+                              : ""}
                           </p>
 
-                          <h2 className="mt-2 text-xl font-bold leading-tight">
+                          <h2 className="mt-2 truncate text-xl font-bold leading-tight">
                             {product.title}
                           </h2>
-
-                          <p className="mt-2 text-sm text-zinc-500">
-                            {product.console} •{" "}
-                            {product.condition}
-                          </p>
                         </div>
 
-                        <span
-                          className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
-                            product.stock > 0
-                              ? "bg-emerald-500/10 text-emerald-400"
-                              : "bg-red-500/10 text-red-400"
-                          }`}
-                        >
-                          {product.stock > 0
-                            ? `${product.stock} em estoque`
-                            : "Sem estoque"}
+                        <span className="shrink-0 rounded-md border border-zinc-800 bg-zinc-900 px-2 py-1 text-xs font-medium text-zinc-400">
+                          {product.condition}
                         </span>
                       </div>
 
-                      <p className="mt-5 text-2xl font-black text-white">
-                        {currencyFormatter.format(
-                          Number(product.price)
-                        )}
-                      </p>
+                      <div className="mt-4 flex items-end justify-between gap-4">
+                        <p className="text-2xl font-black text-white">
+                          {currencyFormatter.format(
+                            Number(product.price)
+                          )}
+                        </p>
 
-                      <div className="mt-5 flex items-center gap-2 text-sm text-zinc-500">
-                        <Images size={17} />
+                        <p className="flex shrink-0 items-center gap-1 text-xs text-zinc-500">
+                          <Images size={14} />
 
-                        <span>
                           {product._count.images}{" "}
                           {product._count.images === 1
-                            ? "imagem"
-                            : "imagens"}
-                        </span>
+                            ? "foto"
+                            : "fotos"}
+                        </p>
                       </div>
 
-                      <div className="mt-6 grid grid-cols-2 gap-3">
-                        <Link
-                          href={`/admin/produtos/${product.slug}/editar`}
-                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-700 px-4 py-3 text-sm font-semibold text-white transition hover:border-yellow-400 hover:text-yellow-400"
-                        >
-                          <Pencil size={16} />
-                          Editar
-                        </Link>
+                      <div className="mt-5 flex items-center justify-between border-t border-zinc-900 pt-4">
+                        <p className="text-sm text-zinc-400">
+                          Estoque:{" "}
+                          <span
+                            className={
+                              product.stock > 0
+                                ? "font-bold text-white"
+                                : "font-bold text-red-400"
+                            }
+                          >
+                            {product.stock} un.
+                          </span>
+                        </p>
 
-                        <Link
-                          href={`/admin/produtos/${product.slug}/imagens`}
-                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-yellow-400 px-4 py-3 text-sm font-bold text-black transition hover:bg-yellow-300"
-                        >
-                          <Images size={16} />
-                          Imagens
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/admin/produtos/${product.slug}/editar`}
+                            title="Editar produto"
+                            aria-label={`Editar ${product.title}`}
+                            className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-400 transition hover:border-yellow-400 hover:text-yellow-400"
+                          >
+                            <Pencil size={17} />
+                          </Link>
+
+                          <Link
+                            href={`/admin/produtos/${product.slug}/imagens`}
+                            title="Gerenciar imagens"
+                            aria-label={`Gerenciar imagens de ${product.title}`}
+                            className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-400 text-black transition hover:bg-yellow-300"
+                          >
+                            <Images size={17} />
+                          </Link>
+                        </div>
                       </div>
 
                       <DeleteProductButton

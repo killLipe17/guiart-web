@@ -10,7 +10,7 @@ export const products: Product[] = [
 
     console: "Super Nintendo",
 
-    category: "Jogo",
+    category: "Jogos",
 
     price: 399,
 
