@@ -4,6 +4,7 @@ import {
 } from "@prisma/client";
 import {
   ClipboardList,
+  Download,
   Eye,
   Filter,
   House,
@@ -262,6 +263,33 @@ export default async function AdminOrdersPage({
     Boolean(searchQuery) ||
     selectedStatus !== "ALL";
 
+  const exportSearchParams =
+    new URLSearchParams();
+
+  if (searchQuery) {
+    exportSearchParams.set(
+      "q",
+      searchQuery
+    );
+  }
+
+  if (selectedStatus !== "ALL") {
+    exportSearchParams.set(
+      "status",
+      selectedStatus
+    );
+  }
+
+  const exportQuery =
+    exportSearchParams.toString();
+
+  const exportHref =
+    `/admin/pedidos/exportar${
+      exportQuery
+        ? `?${exportQuery}`
+        : ""
+    }`;
+
   return (
     <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6">
       <div className="mx-auto max-w-7xl">
@@ -276,9 +304,8 @@ export default async function AdminOrdersPage({
             </h1>
 
             <p className="mt-2 text-sm text-zinc-500">
-              Acompanhe os pedidos
-              enviados pelo carrinho do
-              site.
+              Acompanhe os pedidos enviados
+              pelo carrinho do site.
             </p>
           </div>
 
@@ -298,6 +325,14 @@ export default async function AdminOrdersPage({
               <Package size={18} />
               Produtos
             </Link>
+
+            <a
+              href={exportHref}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 text-sm font-semibold text-emerald-400 transition hover:bg-emerald-500/20"
+            >
+              <Download size={18} />
+              Exportar CSV
+            </a>
           </nav>
         </header>
 
@@ -308,9 +343,7 @@ export default async function AdminOrdersPage({
               ordersSummary.length
             )}
             icon={
-              <ClipboardList
-                size={22}
-              />
+              <ClipboardList size={22} />
             }
           />
 
@@ -320,9 +353,7 @@ export default async function AdminOrdersPage({
               pendingOrders
             )}
             icon={
-              <ShoppingBag
-                size={22}
-              />
+              <ShoppingBag size={22} />
             }
           />
 
@@ -343,9 +374,7 @@ export default async function AdminOrdersPage({
             )}
             description="Não inclui cancelados"
             icon={
-              <ShoppingBag
-                size={22}
-              />
+              <ShoppingBag size={22} />
             }
           />
         </section>
@@ -435,9 +464,7 @@ export default async function AdminOrdersPage({
                   aria-label="Limpar filtros"
                   className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-300 transition hover:border-yellow-400 hover:text-yellow-400"
                 >
-                  <RotateCcw
-                    size={18}
-                  />
+                  <RotateCcw size={18} />
                 </Link>
               )}
             </div>
@@ -483,9 +510,7 @@ export default async function AdminOrdersPage({
                   href="/admin/pedidos"
                   className="mt-6 inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-5 py-3 font-bold text-black transition hover:bg-yellow-300"
                 >
-                  <RotateCcw
-                    size={18}
-                  />
+                  <RotateCcw size={18} />
                   Limpar filtros
                 </Link>
               )}
@@ -506,8 +531,7 @@ export default async function AdminOrdersPage({
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-3">
                         <h2 className="text-xl font-black text-white">
-                          Pedido #
-                          {order.number}
+                          Pedido #{order.number}
                         </h2>
 
                         <span
