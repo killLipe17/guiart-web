@@ -2,12 +2,14 @@ import Link from "next/link";
 import {
   Boxes,
   Gem,
+  House,
   ImageIcon,
   Images,
   PackageOpen,
   Pencil,
   Plus,
   Star,
+  Store,
 } from "lucide-react";
 
 import { DeleteProductButton } from "@/components/admin/DeleteProductButton";
@@ -80,34 +82,52 @@ export default async function AdminProductsPage() {
   );
 
   return (
-    <main className="min-h-screen bg-black px-4 py-10 text-white sm:px-6 sm:py-12">
+    <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12">
       <div className="mx-auto max-w-7xl">
-        <header className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-yellow-400">
-              Painel administrativo
-            </p>
+        <header className="flex flex-col gap-6">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.25em] text-yellow-400">
+                Painel administrativo
+              </p>
 
-            <h1 className="mt-3 text-4xl font-black">
-              Produtos
-            </h1>
+              <h1 className="mt-3 text-3xl font-black sm:text-4xl">
+                Produtos
+              </h1>
 
-            <p className="mt-3 max-w-2xl text-zinc-400">
-              Gerencie os produtos, preços, estoque e imagens da
-              Guiart Games.
-            </p>
-          </div>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
+                Gerencie os produtos, preços, estoque e imagens da
+                Guiart Games.
+              </p>
+            </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <LogoutButton />
+            <div className="grid gap-3 sm:grid-cols-2 lg:flex lg:flex-wrap lg:justify-end">
+              <Link
+                href="/"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm font-semibold text-zinc-200 transition hover:border-yellow-400 hover:text-yellow-400"
+              >
+                <House size={18} />
+                Voltar para a loja
+              </Link>
 
-            <Link
-              href="/admin/produtos/novo"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-yellow-400 px-5 py-3 font-bold text-black transition hover:bg-yellow-300"
-            >
-              <Plus size={19} />
-              Novo produto
-            </Link>
+              <Link
+                href="/catalogo"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm font-semibold text-zinc-200 transition hover:border-yellow-400 hover:text-yellow-400"
+              >
+                <Store size={18} />
+                Ver catálogo
+              </Link>
+
+              <LogoutButton />
+
+              <Link
+                href="/admin/produtos/novo"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-yellow-400 px-5 py-3 text-sm font-bold text-black transition hover:bg-yellow-300"
+              >
+                <Plus size={19} />
+                Novo produto
+              </Link>
+            </div>
           </div>
         </header>
 
