@@ -1,8 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { prisma } from "@/lib/prisma";
-import { deleteProductImage, uploadProductImage } from "@/lib/storage";
+import {
+  deleteProductImage,
+  uploadProductImage,
+} from "@/lib/storage";
 
 export type ProductImageActionState = {
   success: boolean;
@@ -13,21 +18,27 @@ export async function createProductImageAction(
   _previousState: ProductImageActionState,
   formData: FormData
 ): Promise<ProductImageActionState> {
-  const productId = String(formData.get("productId") ?? "");
+  await requireAdmin();
+
+  const productId = String(
+    formData.get("productId") ?? ""
+  ).trim();
+
   const alt = String(formData.get("alt") ?? "").trim();
-  const image = formData.get("image");
+
+  const file = formData.get("file");
 
   if (!productId) {
     return {
       success: false,
-      message: "Produto não informado.",
+      message: "Produto não identificado.",
     };
   }
 
-  if (!(image instanceof File) || image.size === 0) {
+  if (!(file instanceof File) || file.size === 0) {
     return {
       success: false,
-      message: "Selecione uma imagem.",
+      message: "Selecione uma imagem para enviar.",
     };
   }
 
@@ -37,11 +48,11 @@ export async function createProductImageAction(
     },
     select: {
       id: true,
-      slug: true,
       title: true,
-      images: {
+      slug: true,
+      _count: {
         select: {
-          isCover: true,
+          images: true,
         },
       },
     },
@@ -54,15 +65,49 @@ export async function createProductImageAction(
     };
   }
 
-  let uploadedImage: { url: string; storagePath: string };
+  let uploadedStoragePath: string | null = null;
 
   try {
-    uploadedImage = await uploadProductImage({
-      file: image,
+    const uploadedImage = await uploadProductImage({
+      file,
       productId: product.id,
     });
+
+    uploadedStoragePath = uploadedImage.storagePath;
+
+    const imageCount = product._count.images;
+
+    await prisma.productImage.create({
+      data: {
+        productId: product.id,
+        url: uploadedImage.url,
+        storagePath: uploadedImage.storagePath,
+        alt: alt || product.title,
+        order: imageCount,
+        isCover: imageCount === 0,
+      },
+    });
+
+    revalidateProductImagePaths(product.slug);
+
+    return {
+      success: true,
+      message: "Imagem enviada com sucesso.",
+    };
   } catch (error) {
-    console.error("Erro no upload da imagem:", error);
+    console.error("Erro ao enviar imagem:", error);
+
+    if (uploadedStoragePath) {
+      try {
+        await deleteProductImage(uploadedStoragePath);
+      } catch (cleanupError) {
+        console.error(
+          "Erro ao remover upload incompleto:",
+          cleanupError
+        );
+      }
+    }
+
     return {
       success: false,
       message:
@@ -71,160 +116,145 @@ export async function createProductImageAction(
           : "Não foi possível enviar a imagem.",
     };
   }
-
-  try {
-    const lastImage = await prisma.productImage.findFirst({
-      where: {
-        productId: product.id,
-      },
-      orderBy: {
-        order: "desc",
-      },
-      select: {
-        order: true,
-      },
-    });
-
-    const hasCover = product.images.some(
-      (productImage) => productImage.isCover
-    );
-
-    await prisma.productImage.create({
-      data: {
-        productId: product.id,
-        url: uploadedImage.url,
-        storagePath: uploadedImage.storagePath,
-        alt: alt || `${product.title} - Guiart Games`,
-        order: (lastImage?.order ?? -1) + 1,
-        isCover: !hasCover,
-      },
-    });
-  } catch (error) {
-    await deleteProductImage(uploadedImage.storagePath);
-    console.error("Erro ao salvar imagem no banco:", error);
-    return {
-      success: false,
-      message: "Não foi possível salvar a imagem no banco.",
-    };
-  }
-
-  revalidatePath("/");
-  revalidatePath("/catalogo");
-  revalidatePath(`/produto/${product.slug}`);
-  revalidatePath("/admin/produtos");
-  revalidatePath(`/admin/produtos/${product.slug}/imagens`);
-
-  return {
-    success: true,
-    message: "Imagem enviada com sucesso.",
-  };
 }
 
 export async function setProductImageCoverAction(
   formData: FormData
 ): Promise<void> {
-  const imageId = String(formData.get("imageId") ?? "");
+  await requireAdmin();
 
-  if (!imageId) {
+  const imageId = String(
+    formData.get("imageId") ?? ""
+  ).trim();
+
+  const productId = String(
+    formData.get("productId") ?? ""
+  ).trim();
+
+  if (!imageId || !productId) {
     return;
   }
 
-  const image = await prisma.productImage.findUnique({
-    where: {
-      id: imageId,
-    },
-    select: {
-      id: true,
-      productId: true,
-      product: {
-        select: {
-          slug: true,
+  try {
+    const image = await prisma.productImage.findFirst({
+      where: {
+        id: imageId,
+        productId,
+      },
+      select: {
+        id: true,
+        product: {
+          select: {
+            slug: true,
+          },
         },
       },
-    },
-  });
+    });
 
-  if (!image) {
-    return;
+    if (!image) {
+      return;
+    }
+
+    await prisma.$transaction([
+      prisma.productImage.updateMany({
+        where: {
+          productId,
+          isCover: true,
+        },
+        data: {
+          isCover: false,
+        },
+      }),
+
+      prisma.productImage.update({
+        where: {
+          id: imageId,
+        },
+        data: {
+          isCover: true,
+        },
+      }),
+    ]);
+
+    revalidateProductImagePaths(image.product.slug);
+  } catch (error) {
+    console.error(
+      "Erro ao definir imagem de capa:",
+      error
+    );
+
+    throw new Error(
+      "Não foi possível definir a imagem como capa."
+    );
   }
-
-  await prisma.$transaction([
-    prisma.productImage.updateMany({
-      where: {
-        productId: image.productId,
-      },
-      data: {
-        isCover: false,
-      },
-    }),
-    prisma.productImage.update({
-      where: {
-        id: image.id,
-      },
-      data: {
-        isCover: true,
-      },
-    }),
-  ]);
-
-  revalidatePath("/");
-  revalidatePath("/catalogo");
-  revalidatePath(`/produto/${image.product.slug}`);
-  revalidatePath(`/admin/produtos/${image.product.slug}/imagens`);
 }
 
 export async function deleteProductImageAction(
   formData: FormData
 ): Promise<void> {
-  const imageId = String(formData.get("imageId") ?? "");
+  await requireAdmin();
 
-  if (!imageId) {
+  const imageId = String(
+    formData.get("imageId") ?? ""
+  ).trim();
+
+  const productId = String(
+    formData.get("productId") ?? ""
+  ).trim();
+
+  if (!imageId || !productId) {
     return;
   }
 
-  const image = await prisma.productImage.findUnique({
-    where: {
-      id: imageId,
-    },
-    select: {
-      id: true,
-      storagePath: true,
-      isCover: true,
-      productId: true,
-      product: {
-        select: {
-          slug: true,
+  try {
+    const image = await prisma.productImage.findFirst({
+      where: {
+        id: imageId,
+        productId,
+      },
+      select: {
+        id: true,
+        storagePath: true,
+        isCover: true,
+        product: {
+          select: {
+            slug: true,
+          },
         },
       },
-    },
-  });
+    });
 
-  if (!image) {
-    return;
-  }
+    if (!image) {
+      return;
+    }
 
-  await prisma.$transaction(async (transaction) => {
-    await transaction.productImage.delete({
+    await prisma.productImage.delete({
       where: {
         id: image.id,
       },
     });
 
     if (image.isCover) {
-      const nextImage = await transaction.productImage.findFirst({
-        where: {
-          productId: image.productId,
-        },
-        orderBy: {
-          order: "asc",
-        },
-        select: {
-          id: true,
-        },
-      });
+      const nextImage =
+        await prisma.productImage.findFirst({
+          where: {
+            productId,
+          },
+          orderBy: [
+            {
+              order: "asc",
+            },
+            {
+              createdAt: "asc",
+            },
+          ],
+          select: {
+            id: true,
+          },
+        });
 
       if (nextImage) {
-        await transaction.productImage.update({
+        await prisma.productImage.update({
           where: {
             id: nextImage.id,
           },
@@ -234,19 +264,36 @@ export async function deleteProductImageAction(
         });
       }
     }
-  });
 
-  try {
-    await deleteProductImage(image.storagePath);
+    try {
+      await deleteProductImage(image.storagePath);
+    } catch (storageError) {
+      console.error(
+        "Imagem removida do banco, mas ocorreu um erro no Storage:",
+        storageError
+      );
+    }
+
+    revalidateProductImagePaths(image.product.slug);
   } catch (error) {
-    console.error(
-      "A imagem foi removida do banco, mas não do Storage:",
-      error
+    console.error("Erro ao excluir imagem:", error);
+
+    throw new Error(
+      "Não foi possível excluir a imagem."
     );
   }
+}
 
+function revalidateProductImagePaths(
+  productSlug: string
+) {
   revalidatePath("/");
   revalidatePath("/catalogo");
-  revalidatePath(`/produto/${image.product.slug}`);
-  revalidatePath(`/admin/produtos/${image.product.slug}/imagens`);
+  revalidatePath("/admin/produtos");
+
+  revalidatePath(
+    `/admin/produtos/${productSlug}/imagens`
+  );
+
+  revalidatePath(`/produto/${productSlug}`);
 }
