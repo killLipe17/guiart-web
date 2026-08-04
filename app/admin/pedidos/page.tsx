@@ -15,18 +15,16 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-const currencyFormatter =
-  new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  });
+const currencyFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
 
-const dateFormatter =
-  new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short",
-    timeZone: "America/Sao_Paulo",
-  });
+const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
+  dateStyle: "short",
+  timeStyle: "short",
+  timeZone: "America/Sao_Paulo",
+});
 
 const statusOptions: Array<{
   value: OrderStatus;
@@ -54,10 +52,7 @@ const statusOptions: Array<{
   },
 ];
 
-const statusLabels: Record<
-  OrderStatus,
-  string
-> = {
+const statusLabels: Record<OrderStatus, string> = {
   PENDING: "Pendente",
   CONFIRMED: "Confirmado",
   PAID: "Pago",
@@ -65,10 +60,7 @@ const statusLabels: Record<
   CANCELLED: "Cancelado",
 };
 
-const statusStyles: Record<
-  OrderStatus,
-  string
-> = {
+const statusStyles: Record<OrderStatus, string> = {
   PENDING:
     "border-yellow-400/30 bg-yellow-400/10 text-yellow-400",
 
@@ -88,59 +80,50 @@ const statusStyles: Record<
 export default async function AdminOrdersPage() {
   await requireAdmin();
 
-  const orders =
-    await prisma.order.findMany({
-      orderBy: {
-        createdAt: "desc",
-      },
+  const orders = await prisma.order.findMany({
+    orderBy: {
+      createdAt: "desc",
+    },
 
-      take: 100,
+    take: 100,
 
-      select: {
-        id: true,
-        number: true,
-        customerName: true,
-        status: true,
-        total: true,
-        notes: true,
-        createdAt: true,
+    select: {
+      id: true,
+      number: true,
+      customerName: true,
+      status: true,
+      total: true,
+      notes: true,
+      createdAt: true,
 
-        _count: {
-          select: {
-            items: true,
-          },
-        },
-
-        items: {
-          take: 1,
-
-          select: {
-            title: true,
-          },
+      _count: {
+        select: {
+          items: true,
         },
       },
-    });
 
-  const pendingOrders =
-    orders.filter(
-      (order) =>
-        order.status ===
-        OrderStatus.PENDING
-    ).length;
+      items: {
+        take: 1,
 
-  const completedOrders =
-    orders.filter(
-      (order) =>
-        order.status ===
-        OrderStatus.COMPLETED
-    ).length;
+        select: {
+          title: true,
+        },
+      },
+    },
+  });
 
-  const totalRegistered =
-    orders.reduce(
-      (total, order) =>
-        total + Number(order.total),
-      0
-    );
+  const pendingOrders = orders.filter(
+    (order) => order.status === OrderStatus.PENDING
+  ).length;
+
+  const completedOrders = orders.filter(
+    (order) => order.status === OrderStatus.COMPLETED
+  ).length;
+
+  const totalRegistered = orders.reduce(
+    (total, order) => total + Number(order.total),
+    0
+  );
 
   return (
     <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6">
@@ -156,8 +139,7 @@ export default async function AdminOrdersPage() {
             </h1>
 
             <p className="mt-2 text-sm text-zinc-500">
-              Acompanhe os pedidos enviados
-              pelo carrinho do site.
+              Acompanhe os pedidos enviados pelo carrinho do site.
             </p>
           </div>
 
@@ -183,48 +165,26 @@ export default async function AdminOrdersPage() {
         <section className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <DashboardCard
             label="Pedidos exibidos"
-            value={String(
-              orders.length
-            )}
-            icon={
-              <ClipboardList
-                size={22}
-              />
-            }
+            value={String(orders.length)}
+            icon={<ClipboardList size={22} />}
           />
 
           <DashboardCard
             label="Pedidos pendentes"
-            value={String(
-              pendingOrders
-            )}
-            icon={
-              <ShoppingBag
-                size={22}
-              />
-            }
+            value={String(pendingOrders)}
+            icon={<ShoppingBag size={22} />}
           />
 
           <DashboardCard
             label="Pedidos concluídos"
-            value={String(
-              completedOrders
-            )}
-            icon={
-              <Package size={22} />
-            }
+            value={String(completedOrders)}
+            icon={<Package size={22} />}
           />
 
           <DashboardCard
             label="Total registrado"
-            value={currencyFormatter.format(
-              totalRegistered
-            )}
-            icon={
-              <ShoppingBag
-                size={22}
-              />
-            }
+            value={currencyFormatter.format(totalRegistered)}
+            icon={<ShoppingBag size={22} />}
           />
         </section>
 
@@ -241,16 +201,14 @@ export default async function AdminOrdersPage() {
               </h2>
 
               <p className="mt-2 max-w-sm text-sm leading-6 text-zinc-500">
-                Os pedidos criados pelo
-                carrinho aparecerão aqui.
+                Os pedidos criados pelo carrinho aparecerão aqui.
               </p>
             </div>
           </section>
         ) : (
           <section className="mt-8 space-y-4">
             {orders.map((order) => {
-              const firstItem =
-                order.items[0]?.title;
+              const firstItem = order.items[0]?.title;
 
               return (
                 <article
@@ -261,43 +219,32 @@ export default async function AdminOrdersPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-3">
                         <h2 className="text-xl font-black text-white">
-                          Pedido #
-                          {order.number}
+                          Pedido #{order.number}
                         </h2>
 
                         <span
-                          className={`rounded-full border px-3 py-1 text-xs font-bold ${statusStyles[order.status]}`}
+                          className={`rounded-full border px-3 py-1 text-xs font-bold ${
+                            statusStyles[order.status]
+                          }`}
                         >
-                          {
-                            statusLabels[
-                              order.status
-                            ]
-                          }
+                          {statusLabels[order.status]}
                         </span>
                       </div>
 
                       <p className="mt-3 font-semibold text-zinc-200">
-                        {
-                          order.customerName
-                        }
+                        {order.customerName}
                       </p>
 
                       <p className="mt-1 text-sm text-zinc-500">
-                        {dateFormatter.format(
-                          order.createdAt
-                        )}
+                        {dateFormatter.format(order.createdAt)}
                       </p>
 
                       <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-zinc-400">
                         <span>
                           <strong className="text-white">
-                            {
-                              order._count
-                                .items
-                            }
+                            {order._count.items}
                           </strong>{" "}
-                          {order._count
-                            .items === 1
+                          {order._count.items === 1
                             ? "produto"
                             : "produtos"}
                         </span>
@@ -306,9 +253,7 @@ export default async function AdminOrdersPage() {
                           Total:{" "}
                           <strong className="text-yellow-400">
                             {currencyFormatter.format(
-                              Number(
-                                order.total
-                              )
+                              Number(order.total)
                             )}
                           </strong>
                         </span>
@@ -318,30 +263,22 @@ export default async function AdminOrdersPage() {
                         <p className="mt-3 line-clamp-1 text-sm text-zinc-600">
                           {firstItem}
 
-                          {order._count
-                            .items > 1
-                            ? ` e mais ${
-                                order
-                                  ._count
-                                  .items - 1
-                              }`
+                          {order._count.items > 1
+                            ? ` e mais ${order._count.items - 1}`
                             : ""}
                         </p>
                       )}
 
                       {order.notes && (
                         <p className="mt-3 line-clamp-2 text-sm italic text-zinc-500">
-                          Observação:{" "}
-                          {order.notes}
+                          Observação: {order.notes}
                         </p>
                       )}
                     </div>
 
                     <div className="flex w-full flex-col gap-3 xl:w-auto xl:min-w-80">
                       <form
-                        action={
-                          updateOrderStatusAction
-                        }
+                        action={updateOrderStatusAction}
                         className="flex flex-col gap-2 sm:flex-row"
                       >
                         <input
@@ -351,29 +288,20 @@ export default async function AdminOrdersPage() {
                         />
 
                         <select
+                          key={`${order.id}-${order.status}`}
                           name="status"
-                          defaultValue={
-                            order.status
-                          }
+                          defaultValue={order.status}
                           aria-label={`Status do pedido ${order.number}`}
                           className="min-h-11 flex-1 rounded-xl border border-zinc-800 bg-black px-3 text-sm font-semibold text-white outline-none transition focus:border-yellow-400"
                         >
-                          {statusOptions.map(
-                            (option) => (
-                              <option
-                                key={
-                                  option.value
-                                }
-                                value={
-                                  option.value
-                                }
-                              >
-                                {
-                                  option.label
-                                }
-                              </option>
-                            )
-                          )}
+                          {statusOptions.map((option) => (
+                            <option
+                              key={option.value}
+                              value={option.value}
+                            >
+                              {option.label}
+                            </option>
+                          ))}
                         </select>
 
                         <button
