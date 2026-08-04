@@ -7,12 +7,14 @@ import {
   MessageSquareText,
   Package,
   Save,
+  ShieldAlert,
   User,
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { updateOrderStatusAction } from "@/app/admin/pedidos/actions";
+import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { prisma } from "@/lib/prisma";
 
@@ -24,16 +26,18 @@ type OrderDetailsPageProps = {
   }>;
 };
 
-const currencyFormatter = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-});
+const currencyFormatter =
+  new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
 
-const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
-  dateStyle: "long",
-  timeStyle: "short",
-  timeZone: "America/Sao_Paulo",
-});
+const dateFormatter =
+  new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "long",
+    timeStyle: "short",
+    timeZone: "America/Sao_Paulo",
+  });
 
 const statusOptions: Array<{
   value: OrderStatus;
@@ -61,7 +65,10 @@ const statusOptions: Array<{
   },
 ];
 
-const statusLabels: Record<OrderStatus, string> = {
+const statusLabels: Record<
+  OrderStatus,
+  string
+> = {
   PENDING: "Pendente",
   CONFIRMED: "Confirmado",
   PAID: "Pago",
@@ -69,7 +76,10 @@ const statusLabels: Record<OrderStatus, string> = {
   CANCELLED: "Cancelado",
 };
 
-const statusStyles: Record<OrderStatus, string> = {
+const statusStyles: Record<
+  OrderStatus,
+  string
+> = {
   PENDING:
     "border-yellow-400/30 bg-yellow-400/10 text-yellow-400",
 
@@ -93,44 +103,53 @@ export default async function OrderDetailsPage({
 
   const { id } = await params;
 
-  const order = await prisma.order.findUnique({
-    where: {
-      id,
-    },
+  const order =
+    await prisma.order.findUnique({
+      where: {
+        id,
+      },
 
-    select: {
-      id: true,
-      number: true,
-      customerName: true,
-      notes: true,
-      status: true,
-      total: true,
-      createdAt: true,
-      updatedAt: true,
+      select: {
+        id: true,
+        number: true,
+        customerName: true,
+        notes: true,
+        status: true,
+        total: true,
+        createdAt: true,
+        updatedAt: true,
 
-      items: {
-        select: {
-          id: true,
-          title: true,
-          slug: true,
-          console: true,
-          imageUrl: true,
-          price: true,
-          quantity: true,
-          subtotal: true,
+        items: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            console: true,
+            imageUrl: true,
+            price: true,
+            quantity: true,
+            subtotal: true,
+          },
         },
       },
-    },
-  });
+    });
 
   if (!order) {
     notFound();
   }
 
-  const totalQuantity = order.items.reduce(
-    (total, item) => total + item.quantity,
-    0
-  );
+  const totalQuantity =
+    order.items.reduce(
+      (total, item) =>
+        total + item.quantity,
+      0
+    );
+
+  const canDeleteOrder =
+    order.status ===
+      OrderStatus.PENDING ||
+    order.status ===
+      OrderStatus.CANCELLED;
 
   return (
     <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6">
@@ -144,7 +163,7 @@ export default async function OrderDetailsPage({
             Voltar para os pedidos
           </Link>
 
-          <div className="mt-6 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="mt-6 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <p className="text-sm font-bold uppercase tracking-[0.2em] text-yellow-400">
                 Detalhes do pedido
@@ -157,49 +176,93 @@ export default async function OrderDetailsPage({
 
                 <span
                   className={`rounded-full border px-4 py-2 text-xs font-bold ${
-                    statusStyles[order.status]
+                    statusStyles[
+                      order.status
+                    ]
                   }`}
                 >
-                  {statusLabels[order.status]}
+                  {
+                    statusLabels[
+                      order.status
+                    ]
+                  }
                 </span>
               </div>
             </div>
 
-            <form
-              action={updateOrderStatusAction}
-              className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto"
-            >
-              <input
-                type="hidden"
-                name="orderId"
-                value={order.id}
-              />
-
-              <select
-                key={`${order.id}-${order.status}`}
-                name="status"
-                defaultValue={order.status}
-                aria-label={`Status do pedido ${order.number}`}
-                className="min-h-12 flex-1 rounded-xl border border-zinc-800 bg-zinc-950 px-4 text-sm font-semibold text-white outline-none transition focus:border-yellow-400 lg:min-w-52"
+            <div className="flex w-full flex-col gap-3 lg:w-auto lg:min-w-80">
+              <form
+                action={
+                  updateOrderStatusAction
+                }
+                className="flex w-full flex-col gap-2 sm:flex-row"
               >
-                {statusOptions.map((option) => (
-                  <option
-                    key={option.value}
-                    value={option.value}
-                  >
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                <input
+                  type="hidden"
+                  name="orderId"
+                  value={order.id}
+                />
 
-              <button
-                type="submit"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-yellow-400 px-5 font-bold text-black transition hover:bg-yellow-300"
-              >
-                <Save size={18} />
-                Atualizar status
-              </button>
-            </form>
+                <select
+                  key={`${order.id}-${order.status}`}
+                  name="status"
+                  defaultValue={
+                    order.status
+                  }
+                  aria-label={`Status do pedido ${order.number}`}
+                  className="min-h-12 flex-1 rounded-xl border border-zinc-800 bg-zinc-950 px-4 text-sm font-semibold text-white outline-none transition focus:border-yellow-400 lg:min-w-52"
+                >
+                  {statusOptions.map(
+                    (option) => (
+                      <option
+                        key={
+                          option.value
+                        }
+                        value={
+                          option.value
+                        }
+                      >
+                        {option.label}
+                      </option>
+                    )
+                  )}
+                </select>
+
+                <button
+                  type="submit"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-yellow-400 px-5 font-bold text-black transition hover:bg-yellow-300"
+                >
+                  <Save size={18} />
+                  Atualizar status
+                </button>
+              </form>
+
+              {canDeleteOrder ? (
+                <DeleteOrderButton
+                  orderId={order.id}
+                  orderNumber={
+                    order.number
+                  }
+                />
+              ) : (
+                <div className="flex items-start gap-3 rounded-xl border border-zinc-800 bg-zinc-950 p-4">
+                  <ShieldAlert
+                    size={20}
+                    className="mt-0.5 shrink-0 text-zinc-500"
+                  />
+
+                  <p className="text-sm leading-6 text-zinc-500">
+                    Para excluir este pedido,
+                    altere primeiro o status
+                    para{" "}
+                    <strong className="text-red-400">
+                      Cancelado
+                    </strong>
+                    .
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
@@ -207,27 +270,43 @@ export default async function OrderDetailsPage({
           <InfoCard
             icon={<User size={20} />}
             label="Cliente"
-            value={order.customerName}
+            value={
+              order.customerName
+            }
           />
 
           <InfoCard
-            icon={<CalendarDays size={20} />}
+            icon={
+              <CalendarDays
+                size={20}
+              />
+            }
             label="Criado em"
-            value={dateFormatter.format(order.createdAt)}
+            value={dateFormatter.format(
+              order.createdAt
+            )}
           />
 
           <InfoCard
-            icon={<ClipboardList size={20} />}
+            icon={
+              <ClipboardList
+                size={20}
+              />
+            }
             label="Quantidade"
             value={`${totalQuantity} ${
-              totalQuantity === 1 ? "item" : "itens"
+              totalQuantity === 1
+                ? "item"
+                : "itens"
             }`}
           />
 
           <InfoCard
             icon={<Package size={20} />}
             label="Total"
-            value={currencyFormatter.format(Number(order.total))}
+            value={currencyFormatter.format(
+              Number(order.total)
+            )}
             highlighted
           />
         </section>
@@ -247,68 +326,78 @@ export default async function OrderDetailsPage({
           </div>
 
           <div className="divide-y divide-zinc-800">
-            {order.items.map((item) => (
-              <article
-                key={item.id}
-                className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:p-6"
-              >
-                <Link
-                  href={`/produto/${item.slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-black"
+            {order.items.map(
+              (item) => (
+                <article
+                  key={item.id}
+                  className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:p-6"
                 >
-                  {item.imageUrl ? (
-                    <img
-                      src={item.imageUrl}
-                      alt={item.title}
-                      className="h-full w-full object-contain"
-                    />
-                  ) : (
-                    <ImageIcon
-                      size={34}
-                      className="text-zinc-700"
-                    />
-                  )}
-                </Link>
-
-                <div className="min-w-0 flex-1">
                   <Link
                     href={`/produto/${item.slug}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-lg font-bold transition hover:text-yellow-400"
+                    className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-black"
                   >
-                    {item.title}
+                    {item.imageUrl ? (
+                      <img
+                        src={
+                          item.imageUrl
+                        }
+                        alt={item.title}
+                        className="h-full w-full object-contain"
+                      />
+                    ) : (
+                      <ImageIcon
+                        size={34}
+                        className="text-zinc-700"
+                      />
+                    )}
                   </Link>
 
-                  {item.console && (
-                    <p className="mt-1 text-sm text-zinc-500">
-                      {item.console}
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      href={`/produto/${item.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-lg font-bold transition hover:text-yellow-400"
+                    >
+                      {item.title}
+                    </Link>
+
+                    {item.console && (
+                      <p className="mt-1 text-sm text-zinc-500">
+                        {
+                          item.console
+                        }
+                      </p>
+                    )}
+
+                    <p className="mt-3 text-sm text-zinc-400">
+                      {item.quantity} ×{" "}
+                      {currencyFormatter.format(
+                        Number(
+                          item.price
+                        )
+                      )}
                     </p>
-                  )}
+                  </div>
 
-                  <p className="mt-3 text-sm text-zinc-400">
-                    {item.quantity} ×{" "}
-                    {currencyFormatter.format(
-                      Number(item.price)
-                    )}
-                  </p>
-                </div>
+                  <div className="text-left sm:text-right">
+                    <p className="text-xs uppercase tracking-wider text-zinc-600">
+                      Subtotal
+                    </p>
 
-                <div className="text-left sm:text-right">
-                  <p className="text-xs uppercase tracking-wider text-zinc-600">
-                    Subtotal
-                  </p>
-
-                  <p className="mt-2 text-xl font-black">
-                    {currencyFormatter.format(
-                      Number(item.subtotal)
-                    )}
-                  </p>
-                </div>
-              </article>
-            ))}
+                    <p className="mt-2 text-xl font-black">
+                      {currencyFormatter.format(
+                        Number(
+                          item.subtotal
+                        )
+                      )}
+                    </p>
+                  </div>
+                </article>
+              )
+            )}
           </div>
 
           <div className="flex items-center justify-between gap-4 border-t border-zinc-800 bg-black px-5 py-5 sm:px-6">
@@ -317,7 +406,9 @@ export default async function OrderDetailsPage({
             </span>
 
             <strong className="text-2xl font-black text-yellow-400">
-              {currencyFormatter.format(Number(order.total))}
+              {currencyFormatter.format(
+                Number(order.total)
+              )}
             </strong>
           </div>
         </section>
@@ -344,12 +435,16 @@ export default async function OrderDetailsPage({
         <section className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-5 text-sm text-zinc-500 sm:p-6">
           <p>
             Pedido criado em{" "}
-            {dateFormatter.format(order.createdAt)}
+            {dateFormatter.format(
+              order.createdAt
+            )}
           </p>
 
           <p className="mt-2">
             Última atualização em{" "}
-            {dateFormatter.format(order.updatedAt)}
+            {dateFormatter.format(
+              order.updatedAt
+            )}
           </p>
         </section>
       </div>
