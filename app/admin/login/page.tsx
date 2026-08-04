@@ -1,32 +1,29 @@
+import {
+  ArrowLeft,
+  ShieldCheck,
+} from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, ShieldCheck } from "lucide-react";
 
 import { LoginForm } from "@/components/admin/LoginForm";
+import { isAllowedAdminEmail } from "@/lib/auth/admin-emails";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminLoginPage() {
-  const supabase = await createClient();
+  const supabase =
+    await createClient();
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const adminEmail = process.env.ADMIN_EMAIL
-    ?.trim()
-    .toLowerCase();
-
-  const loggedUserEmail = user?.email
-    ?.trim()
-    .toLowerCase();
-
   if (
-    adminEmail &&
-    loggedUserEmail === adminEmail
+    user &&
+    isAllowedAdminEmail(user.email)
   ) {
-    redirect("/admin/produtos");
+    redirect("/admin");
   }
 
   return (

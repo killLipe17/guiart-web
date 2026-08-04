@@ -1,23 +1,34 @@
 import { createServerClient } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
+import {
+  NextResponse,
+  type NextRequest,
+} from "next/server";
+
+import { isAllowedAdminEmail } from "@/lib/auth/admin-emails";
 
 function copyCookies(
   sourceResponse: NextResponse,
   targetResponse: NextResponse
 ) {
-  sourceResponse.cookies.getAll().forEach((cookie) => {
-    targetResponse.cookies.set(cookie);
-  });
+  sourceResponse.cookies
+    .getAll()
+    .forEach((cookie) => {
+      targetResponse.cookies.set(cookie);
+    });
 
   return targetResponse;
 }
 
-export async function updateSession(request: NextRequest) {
+export async function updateSession(
+  request: NextRequest
+) {
   const supabaseUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL;
+    process.env
+      .NEXT_PUBLIC_SUPABASE_URL;
 
   const supabaseAnonKey =
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    process.env
+      .NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl) {
     throw new Error(
@@ -31,41 +42,53 @@ export async function updateSession(request: NextRequest) {
     );
   }
 
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
+  let supabaseResponse =
+    NextResponse.next({
+      request,
+    });
 
-  const supabase = createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
+  const supabase =
+    createServerClient(
+      supabaseUrl,
+      supabaseAnonKey,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
 
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => {
-            request.cookies.set(name, value);
-          });
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(
+              ({ name, value }) => {
+                request.cookies.set(
+                  name,
+                  value
+                );
+              }
+            );
 
-          supabaseResponse = NextResponse.next({
-            request,
-          });
+            supabaseResponse =
+              NextResponse.next({
+                request,
+              });
 
-          cookiesToSet.forEach(
-            ({ name, value, options }) => {
-              supabaseResponse.cookies.set(
+            cookiesToSet.forEach(
+              ({
                 name,
                 value,
-                options
-              );
-            }
-          );
+                options,
+              }) => {
+                supabaseResponse.cookies.set(
+                  name,
+                  value,
+                  options
+                );
+              }
+            );
+          },
         },
-      },
-    }
-  );
+      }
+    );
 
   const { data, error } =
     await supabase.auth.getClaims();
@@ -76,20 +99,14 @@ export async function updateSession(request: NextRequest) {
       }
     | undefined;
 
-  const loggedUserEmail = claims?.email
-    ?.trim()
-    .toLowerCase();
-
-  const adminEmail = process.env.ADMIN_EMAIL
-    ?.trim()
-    .toLowerCase();
-
   const isAuthorizedAdmin =
     !error &&
-    Boolean(adminEmail) &&
-    loggedUserEmail === adminEmail;
+    isAllowedAdminEmail(
+      claims?.email
+    );
 
-  const pathname = request.nextUrl.pathname;
+  const pathname =
+    request.nextUrl.pathname;
 
   const isAdminRoute =
     pathname.startsWith("/admin");
@@ -102,9 +119,12 @@ export async function updateSession(request: NextRequest) {
     !isLoginRoute &&
     !isAuthorizedAdmin
   ) {
-    const loginUrl = request.nextUrl.clone();
+    const loginUrl =
+      request.nextUrl.clone();
 
-    loginUrl.pathname = "/admin/login";
+    loginUrl.pathname =
+      "/admin/login";
+
     loginUrl.search = "";
 
     return copyCookies(
@@ -113,15 +133,19 @@ export async function updateSession(request: NextRequest) {
     );
   }
 
-  if (isLoginRoute && isAuthorizedAdmin) {
-    const productsUrl = request.nextUrl.clone();
+  if (
+    isLoginRoute &&
+    isAuthorizedAdmin
+  ) {
+    const adminUrl =
+      request.nextUrl.clone();
 
-    productsUrl.pathname = "/admin/produtos";
-    productsUrl.search = "";
+    adminUrl.pathname = "/admin";
+    adminUrl.search = "";
 
     return copyCookies(
       supabaseResponse,
-      NextResponse.redirect(productsUrl)
+      NextResponse.redirect(adminUrl)
     );
   }
 

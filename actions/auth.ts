@@ -1,6 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
+
+import {
+  getAllowedAdminEmails,
+  isAllowedAdminEmail,
+  normalizeEmail,
+} from "@/lib/auth/admin-emails";
 import { createClient } from "@/lib/supabase/server";
 
 export type LoginActionState = {
@@ -12,59 +18,79 @@ export async function loginAction(
   _previousState: LoginActionState,
   formData: FormData
 ): Promise<LoginActionState> {
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const password = String(formData.get("password") ?? "");
+  const email = normalizeEmail(
+    String(formData.get("email") ?? "")
+  );
+
+  const password = String(
+    formData.get("password") ?? ""
+  );
 
   if (!email || !password) {
     return {
       success: false,
-      message: "Informe o e-mail e a senha.",
+      message:
+        "Informe o e-mail e a senha.",
     };
   }
 
-  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  const allowedAdminEmails =
+    getAllowedAdminEmails();
 
-  if (!adminEmail) {
+  if (allowedAdminEmails.size === 0) {
     return {
       success: false,
-      message: "O e-mail administrativo não foi configurado.",
+      message:
+        "Nenhum e-mail administrativo foi configurado.",
     };
   }
 
-  const supabase = await createClient();
+  const supabase =
+    await createClient();
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  const { data, error } =
+    await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
   if (error || !data.user) {
     return {
       success: false,
-      message: "E-mail ou senha incorretos.",
+      message:
+        "E-mail ou senha incorretos.",
     };
   }
 
-  const loggedUserEmail = data.user.email?.trim().toLowerCase();
-
-  if (loggedUserEmail !== adminEmail) {
+  if (
+    !isAllowedAdminEmail(
+      data.user.email
+    )
+  ) {
     await supabase.auth.signOut();
+
     return {
       success: false,
-      message: "Este usuário não possui acesso administrativo.",
+      message:
+        "Este usuário não possui acesso administrativo.",
     };
   }
 
-  redirect("/admin/produtos");
+  redirect("/admin");
 }
 
-export async function logoutAction(): Promise<void> {
-  const supabase = await createClient();
+export async function logoutAction() {
+  const supabase =
+    await createClient();
 
-  const { error } = await supabase.auth.signOut();
+  const { error } =
+    await supabase.auth.signOut();
 
   if (error) {
-    console.error("Erro ao encerrar sessão:", error);
+    console.error(
+      "Erro ao encerrar sessão:",
+      error
+    );
   }
 
   redirect("/admin/login");
