@@ -1,6 +1,7 @@
 import { Product } from "@/types/product";
 import { Button } from "@/components/ui/Button";
 import { ProductBadge } from "./ProductBadge";
+import Link from "next/link";
 
 type ProductCardProps = {
   product: Product;
@@ -15,33 +16,32 @@ export function ProductCard({ product }: ProductCardProps) {
           <span className="text-sm tracking-[0.4em] text-zinc-600"> FOTO </span>
         </div>
       </div>
-
       <div className="space-y-5 p-6">
         {/* Bloco Atualizado */}
         <span className="inline-flex w-fit rounded-full border border-yellow-400/30 bg-yellow-400/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-yellow-400">
           {product.console}
         </span>
-
         <h3 className="line-clamp-2 text-xl font-extrabold tracking-tight">
           {product.title}
         </h3>
-
         <div className="flex flex-wrap gap-2">
           {product.hasBox && <ProductBadge text="Caixa" />}
           {product.hasManual && <ProductBadge text="Manual" />}
           <ProductBadge text={product.condition} />
         </div>
-
         <p className="text-3xl font-black text-yellow-400">
           {product.price.toLocaleString("pt-BR", {
             style: "currency",
             currency: "BRL",
           })}
         </p>
-
         {/* Bloco substituído */}
         <div className="pt-2">
-          <Button className="w-full"> Ver detalhes → </Button>
+          <Link href={`/produto/${product.id}`}>
+            <Button className="w-full">
+              Ver detalhes →
+            </Button>
+          </Link>
         </div>
       </div>
     </article>

@@ -1,55 +1,38 @@
+import { Input } from "@/components/ui/Input";
+
 export function Filters() {
   return (
-    <aside className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+    <section className="mb-10 rounded-2xl border border-white/10 bg-zinc-900/60 p-6 backdrop-blur">
+      <div className="grid gap-4 md:grid-cols-4">
 
-      <h2 className="mb-6 text-xl font-bold">
-        Filtros
-      </h2>
+        <Input
+          placeholder="Buscar jogos..."
+        />
 
-      <div className="space-y-5">
+        <select className="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3">
+          <option>Todos os consoles</option>
+          <option>PlayStation</option>
+          <option>Xbox</option>
+          <option>Nintendo</option>
+          <option>Sega</option>
+        </select>
 
-        <div>
+        <select className="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3">
+          <option>Todas categorias</option>
+          <option>Jogos</option>
+          <option>Consoles</option>
+          <option>Colecionáveis</option>
+          <option>Acessórios</option>
+        </select>
 
-          <label className="mb-2 block">
-            Console
-          </label>
-
-          <select className="w-full rounded-lg bg-zinc-800 p-3">
-
-            <option>Todos</option>
-
-            <option>Super Nintendo</option>
-
-            <option>PlayStation</option>
-
-            <option>Mega Drive</option>
-
-          </select>
-
-        </div>
-
-        <div>
-
-          <label className="mb-2 block">
-            Condição
-          </label>
-
-          <select className="w-full rounded-lg bg-zinc-800 p-3">
-
-            <option>Todas</option>
-
-            <option>Excelente</option>
-
-            <option>Muito Bom</option>
-
-            <option>Bom</option>
-
-          </select>
-
-        </div>
+        <select className="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3">
+          <option>Mais recentes</option>
+          <option>Menor preço</option>
+          <option>Maior preço</option>
+          <option>Raridades</option>
+        </select>
 
       </div>
-
-    </aside>
+    </section>
   );
 }
