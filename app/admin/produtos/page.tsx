@@ -4,6 +4,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  FolderKanban,
   Gem,
   ImageIcon,
   Images,
@@ -459,6 +460,14 @@ export default async function AdminProductsPage({
               Pedidos
             </Link>
 
+            <Link
+              href="/admin/categorias"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-950 px-4 text-sm font-semibold text-zinc-300 transition hover:border-yellow-400/40 hover:text-yellow-400"
+            >
+              <FolderKanban size={18} />
+              Categorias
+            </Link>
+
             <LogoutButton />
 
             <Link
@@ -875,7 +884,7 @@ export default async function AdminProductsPage({
                     href={buildProductsHref(
                       currentPage - 1
                     )}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-4 text-sm font-bold text-zinc-300 transition hover:border-yellow-400 hover:text-yellow-400"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-4 text-sm font-bold text-zinc-300transition hover:border-yellow-400 hover:text-yellow-400"
                   >
                     <ChevronLeft
                       size={18}

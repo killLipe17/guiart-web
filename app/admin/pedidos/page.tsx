@@ -7,6 +7,7 @@ import {
   Download,
   Eye,
   Filter,
+  FolderKanban,
   House,
   LayoutDashboard,
   Package,
@@ -333,6 +334,14 @@ export default async function AdminOrdersPage({
             >
               <Package size={18} />
               Produtos
+            </Link>
+
+            <Link
+              href="/admin/categorias"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-950 px-4 text-sm font-semibold text-zinc-300 transition hover:border-yellow-400/40 hover:text-yellow-400"
+            >
+              <FolderKanban size={18} />
+              Categorias
             </Link>
 
             <a

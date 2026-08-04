@@ -6,6 +6,7 @@ import {
   ClipboardList,
   Clock3,
   DollarSign,
+  FolderKanban,
   House,
   ImageIcon,
   Package,
@@ -268,7 +269,7 @@ export default async function AdminDashboardPage() {
             </div>
           </div>
 
-          <div className="mt-5 grid gap-4 md:grid-cols-3">
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <QuickAccessCard
               href="/admin/produtos"
               icon={<Package size={25} />}
@@ -281,6 +282,13 @@ export default async function AdminDashboardPage() {
               icon={<ClipboardList size={25} />}
               title="Pedidos"
               description="Acompanhe clientes, status e movimentações de estoque."
+            />
+
+            <QuickAccessCard
+              href="/admin/categorias"
+              icon={<FolderKanban size={25} />}
+              title="Categorias"
+              description="Crie, renomeie e organize as categorias do catálogo."
             />
 
             <QuickAccessCard

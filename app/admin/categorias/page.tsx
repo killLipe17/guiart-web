@@ -11,6 +11,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import {
   createCategoryAction,
@@ -351,12 +352,8 @@ export default async function AdminCategoriesPage({
                                   type="text"
                                   name="name"
                                   required
-                                  minLength={
-                                    2
-                                  }
-                                  maxLength={
-                                    60
-                                  }
+                                  minLength={2}
+                                  maxLength={60}
                                   defaultValue={
                                     category.name
                                   }
@@ -402,7 +399,7 @@ export default async function AdminCategoriesPage({
 }
 
 type SummaryCardProps = {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   value: string;
   tone?:
