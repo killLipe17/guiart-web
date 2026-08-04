@@ -8,6 +8,7 @@ import {
   Eye,
   Filter,
   House,
+  LayoutDashboard,
   Package,
   RotateCcw,
   Save,
@@ -310,6 +311,14 @@ export default async function AdminOrdersPage({
           </div>
 
           <nav className="flex flex-wrap gap-2">
+            <Link
+              href="/admin"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-950 px-4 text-sm font-semibold text-zinc-300 transition hover:border-yellow-400/40 hover:text-yellow-400"
+            >
+              <LayoutDashboard size={18} />
+              Painel
+            </Link>
+
             <Link
               href="/"
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-950 px-4 text-sm font-semibold text-zinc-300 transition hover:border-yellow-400/40 hover:text-yellow-400"
