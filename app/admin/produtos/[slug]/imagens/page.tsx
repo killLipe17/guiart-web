@@ -1,12 +1,18 @@
+import {
+  ArrowLeft,
+  Images,
+  Star,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Images, Star, Trash2 } from "lucide-react";
-import { ProductImageUploadForm } from "@/components/admin/ProductImageUploadForm";
-import { prisma } from "@/lib/prisma";
+
 import {
   deleteProductImageAction,
   setProductImageCoverAction,
 } from "@/actions/product-images";
+import { ProductImageUploadForm } from "@/components/admin/ProductImageUploadForm";
+import { prisma } from "@/lib/prisma";
 
 type ProductImagesPageProps = {
   params: Promise<{
@@ -14,155 +20,232 @@ type ProductImagesPageProps = {
   }>;
 };
 
-export const dynamic = "force-dynamic";
+export const dynamic =
+  "force-dynamic";
 
 export default async function ProductImagesPage({
   params,
 }: ProductImagesPageProps) {
   const { slug } = await params;
 
-  const product = await prisma.product.findUnique({
-    where: {
-      slug,
-    },
-    select: {
-      id: true,
-      title: true,
-      slug: true,
-      console: true,
-      images: {
-        orderBy: [
-          {
-            isCover: "desc",
+  const product =
+    await prisma.product.findUnique({
+      where: {
+        slug,
+      },
+
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        console: true,
+
+        images: {
+          orderBy: [
+            {
+              isCover: "desc",
+            },
+            {
+              order: "asc",
+            },
+          ],
+
+          select: {
+            id: true,
+            url: true,
+            alt: true,
+            order: true,
+            isCover: true,
           },
-          {
-            order: "asc",
-          },
-        ],
-        select: {
-          id: true,
-          url: true,
-          alt: true,
-          order: true,
-          isCover: true,
         },
       },
-    },
-  });
+    });
 
   if (!product) {
     notFound();
   }
 
+  const imageCountText =
+    product.images.length === 1
+      ? "1 imagem"
+      : `${product.images.length} imagens`;
+
   return (
-    <main className="min-h-screen bg-black px-6 py-12 text-white">
+    <main className="min-h-screen bg-black px-4 py-10 text-white sm:px-6 sm:py-12">
       <div className="mx-auto max-w-5xl">
         <Link
           href="/admin/produtos"
           className="inline-flex items-center gap-2 text-sm text-zinc-400 transition hover:text-yellow-400"
         >
-          <ArrowLeft size={18} /> Voltar para produtos
+          <ArrowLeft size={18} />
+          Voltar para produtos
         </Link>
 
         <div className="mt-8 flex items-start gap-4">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-yellow-400 text-black">
             <Images size={24} />
           </div>
+
           <div>
             <p className="text-sm font-semibold uppercase tracking-widest text-yellow-400">
-              Painel administrative
+              Painel administrativo
             </p>
-            <h1 className="mt-2 text-3xl font-black">Imagens do produto</h1>
+
+            <h1 className="mt-2 text-3xl font-black">
+              Imagens do produto
+            </h1>
+
             <p className="mt-2 text-zinc-400">
-              {product.title} — {product.console}
+              {product.title} —{" "}
+              {product.console}
             </p>
           </div>
         </div>
 
-        <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_380px]">
+        <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_400px]">
           <section>
-            <div className="mb-5 flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-bold">Imagens cadastradas</h2>
-                <p className="mt-1 text-sm text-zinc-500">
-                  {product.images.length} imagem{" "}
-                  {product.images.length === 1 ? "" : "ns"}
-                </p>
-              </div>
+            <div className="mb-5">
+              <h2 className="text-xl font-bold">
+                Imagens cadastradas
+              </h2>
+
+              <p className="mt-1 text-sm text-zinc-500">
+                {imageCountText}
+              </p>
             </div>
 
-            {product.images.length === 0 ? (
-              <div className="flex min-h-72 items-center justify-center rounded-2xl border border-dashed border-zinc-800 bg-zinc-950">
+            {product.images.length ===
+            0 ? (
+              <div className="flex min-h-72 items-center justify-center rounded-2xl border border-dashed border-zinc-800 bg-zinc-950 px-6">
                 <div className="text-center">
-                  <Images size={42} className="mx-auto text-zinc-700" />
+                  <Images
+                    size={42}
+                    className="mx-auto text-zinc-700"
+                  />
+
                   <p className="mt-4 font-medium text-zinc-300">
-                    Nenhuma imagem cadastrada
+                    Nenhuma imagem
+                    cadastrada
                   </p>
-                  <p className="mt-1 text-sm text-zinc-600">
-                    Use o formulário ao lado para enviar a primeira foto.
+
+                  <p className="mt-1 text-sm leading-6 text-zinc-600">
+                    Use o formulário ao
+                    lado para enviar as
+                    primeiras fotos.
                   </p>
                 </div>
               </div>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2">
-                {product.images.map((image) => (
-                  <article
-                    key={image.id}
-                    className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950"
-                  >
-                    <div className="relative flex aspect-square items-center justify-center bg-zinc-900">
-                      <img
-                        src={image.url}
-                        alt={
-                          image.alt ?? `${product.title} - imagem do produto`
-                        }
-                        className="h-full w-full object-contain"
-                      />
-                      {image.isCover && (
-                        <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-yellow-400 px-3 py-1.5 text-xs font-bold text-black shadow-lg">
-                          <Star size={14} fill="currentColor" /> Capa
-                        </div>
-                      )}
-                    </div>
+                {product.images.map(
+                  (image) => (
+                    <article
+                      key={image.id}
+                      className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950"
+                    >
+                      <div className="relative flex aspect-square items-center justify-center bg-zinc-900">
+                        <img
+                          src={image.url}
+                          alt={
+                            image.alt ??
+                            `${product.title} - imagem do produto`
+                          }
+                          className="h-full w-full object-contain"
+                        />
 
-                    <div className="p-4">
-                      <p className="line-clamp-2 text-sm text-zinc-300">
-                        {image.alt || "Imagem sem descrição"}
-                      </p>
-                      <p className="mt-2 text-xs text-zinc-600">
-                        Ordem: {image.order}
-                      </p>
+                        {image.isCover && (
+                          <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-yellow-400 px-3 py-1.5 text-xs font-bold text-black shadow-lg">
+                            <Star
+                              size={14}
+                              fill="currentColor"
+                            />
+                            Capa
+                          </div>
+                        )}
+                      </div>
 
-                      {!image.isCover && (
+                      <div className="p-4">
+                        <p className="line-clamp-2 text-sm text-zinc-300">
+                          {image.alt ||
+                            "Imagem sem descrição"}
+                        </p>
+
+                        <p className="mt-2 text-xs text-zinc-600">
+                          Ordem:{" "}
+                          {image.order}
+                        </p>
+
+                        {!image.isCover && (
+                          <form
+                            action={
+                              setProductImageCoverAction
+                            }
+                            className="mt-4"
+                          >
+                            <input
+                              type="hidden"
+                              name="imageId"
+                              value={
+                                image.id
+                              }
+                            />
+
+                            <input
+                              type="hidden"
+                              name="productId"
+                              value={
+                                product.id
+                              }
+                            />
+
+                            <button
+                              type="submit"
+                              className="flex w-full items-center justify-center gap-2 rounded-xl border border-yellow-400/40 px-4 py-2 text-sm font-semibold text-yellow-400 transition hover:bg-yellow-400 hover:text-black"
+                            >
+                              <Star
+                                size={16}
+                              />
+                              Definir como capa
+                            </button>
+                          </form>
+                        )}
+
                         <form
-                          action={setProductImageCoverAction}
-                          className="mt-4"
+                          action={
+                            deleteProductImageAction
+                          }
+                          className="mt-3"
                         >
-                          <input type="hidden" name="imageId" value={image.id} />
-                          <input type="hidden" name="productSlug" value={product.slug} />
+                          <input
+                            type="hidden"
+                            name="imageId"
+                            value={
+                              image.id
+                            }
+                          />
+
+                          <input
+                            type="hidden"
+                            name="productId"
+                            value={
+                              product.id
+                            }
+                          />
+
                           <button
                             type="submit"
-                            className="flex w-full items-center justify-center gap-2 rounded-xl border border-yellow-400/40 px-4 py-2 text-sm font-semibold text-yellow-400 transition hover:bg-yellow-400 hover:text-black"
+                            className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/30 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500 hover:text-white"
                           >
-                            <Star size={16} /> Definir como capa
+                            <Trash2
+                              size={16}
+                            />
+                            Excluir imagem
                           </button>
                         </form>
-                      )}
-
-                      <form action={deleteProductImageAction} className="mt-3">
-                        <input type="hidden" name="imageId" value={image.id} />
-                        <input type="hidden" name="productSlug" value={product.slug} />
-                        <button
-                          type="submit"
-                          className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/30 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500 hover:text-white"
-                        >
-                          <Trash2 size={16} />
-                          Excluir imagem
-                        </button>
-                      </form>
-                    </div>
-                  </article>
-                ))}
+                      </div>
+                    </article>
+                  )
+                )}
               </div>
             )}
           </section>
@@ -170,7 +253,9 @@ export default async function ProductImagesPage({
           <aside>
             <ProductImageUploadForm
               productId={product.id}
-              productTitle={product.title}
+              productTitle={
+                product.title
+              }
             />
           </aside>
         </div>
