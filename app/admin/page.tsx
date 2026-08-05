@@ -12,6 +12,7 @@ import {
   Package,
   Plus,
   ShoppingBag,
+  Warehouse,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -251,7 +252,7 @@ export default async function AdminDashboardPage() {
             value={String(outOfStockCount)}
             description="Itens indisponíveis no catálogo"
             icon={<AlertTriangle size={23} />}
-            href="/admin/produtos"
+            href="/admin/estoque?status=OUT"
             danger={outOfStockCount > 0}
           />
         </section>
@@ -269,7 +270,7 @@ export default async function AdminDashboardPage() {
             </div>
           </div>
 
-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             <QuickAccessCard
               href="/admin/produtos"
               icon={<Package size={25} />}
@@ -282,6 +283,13 @@ export default async function AdminDashboardPage() {
               icon={<ClipboardList size={25} />}
               title="Pedidos"
               description="Acompanhe clientes, status e movimentações de estoque."
+            />
+
+            <QuickAccessCard
+              href="/admin/estoque"
+              icon={<Warehouse size={25} />}
+              title="Estoque"
+              description="Ajuste quantidades e acompanhe itens com estoque baixo."
             />
 
             <QuickAccessCard
@@ -412,10 +420,10 @@ export default async function AdminDashboardPage() {
               </div>
 
               <Link
-                href="/admin/produtos"
+                href="/admin/estoque?status=OUT"
                 className="inline-flex shrink-0 items-center gap-1 text-sm font-bold text-yellow-400 transition hover:text-yellow-300"
               >
-                Ver produtos
+                Gerenciar estoque
                 <ArrowRight size={16} />
               </Link>
             </div>
