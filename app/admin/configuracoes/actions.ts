@@ -110,11 +110,19 @@ function redirectToSettings(
   );
 }
 
-function revalidateSettingsPages() {
+function revalidateSettingsPages(
+  productSlugs: string[]
+) {
   revalidatePath("/");
   revalidatePath("/catalogo");
   revalidatePath("/admin");
   revalidatePath("/admin/configuracoes");
+
+  productSlugs.forEach((slug) => {
+    revalidatePath(
+      `/produto/${slug}`
+    );
+  });
 }
 
 export async function updateStoreSettingsAction(
@@ -122,9 +130,13 @@ export async function updateStoreSettingsAction(
 ) {
   await requireAdmin();
 
-  const storeName = normalizeSingleLine(
-    readFormText(formData, "storeName")
-  );
+  const storeName =
+    normalizeSingleLine(
+      readFormText(
+        formData,
+        "storeName"
+      )
+    );
 
   const whatsappNumber =
     normalizeWhatsappNumber(
@@ -174,9 +186,13 @@ export async function updateStoreSettingsAction(
       )
     );
 
-  const address = normalizeMultiline(
-    readFormText(formData, "address")
-  );
+  const address =
+    normalizeMultiline(
+      readFormText(
+        formData,
+        "address"
+      )
+    );
 
   const addressReference =
     normalizeSingleLine(
@@ -422,7 +438,29 @@ export async function updateStoreSettingsAction(
     );
   }
 
-  revalidateSettingsPages();
+  let productSlugs: string[] = [];
+
+  try {
+    const products =
+      await prisma.product.findMany({
+        select: {
+          slug: true,
+        },
+      });
+
+    productSlugs = products.map(
+      (product) => product.slug
+    );
+  } catch (error) {
+    console.error(
+      "Erro ao listar páginas de produtos para revalidação:",
+      error
+    );
+  }
+
+  revalidateSettingsPages(
+    productSlugs
+  );
 
   redirectToSettings(
     "success",

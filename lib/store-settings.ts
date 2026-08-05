@@ -1,8 +1,11 @@
 import "server-only";
 
+import { cache } from "react";
+
 import { prisma } from "@/lib/prisma";
 
-export const STORE_SETTINGS_ID = "main";
+export const STORE_SETTINGS_ID =
+  "main";
 
 export const DEFAULT_STORE_SETTINGS = {
   id: STORE_SETTINGS_ID,
@@ -27,7 +30,7 @@ export const DEFAULT_STORE_SETTINGS = {
     "Retirada disponível na loja física.",
 };
 
-export async function getStoreSettings() {
+async function loadStoreSettings() {
   const existingSettings =
     await prisma.storeSettings.findUnique({
       where: {
@@ -51,3 +54,6 @@ export async function getStoreSettings() {
     });
   }
 }
+
+export const getStoreSettings =
+  cache(loadStoreSettings);
