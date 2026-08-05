@@ -96,3 +96,20 @@ model OrderItem {
   @@index([orderId])
   @@index([productId])
 }
+
+model StoreSettings {
+  id               String   @id @default("main")
+  storeName        String   @default("Guiart Games e Colecionáveis")
+  whatsappNumber   String   @default("5511962222045")
+  whatsappDisplay  String   @default("(11) 96222-2045")
+  instagramUrl     String   @default("https://www.instagram.com/guiart_games/")
+  instagramHandle  String   @default("@guiart_games")
+  tiktokUrl        String   @default("")
+  tiktokHandle     String   @default("@Guiart_Games")
+  address          String   @default("Rua dos Buritis, 54, Loja 9 - Jardim Oriental, São Paulo - SP, 04321-000") @db.Text
+  addressReference String   @default("Próximo ao Metrô Jabaquara")
+  businessHours    String   @default("Consulte o horário pelo WhatsApp") @db.Text
+  whatsappMessage  String   @default("Olá! Vim pelo site da Guiart Games.") @db.Text
+  pickupNotice     String   @default("Retirada disponível na loja física.") @db.Text
+  updatedAt        DateTime @updatedAt
+}

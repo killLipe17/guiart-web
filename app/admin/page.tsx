@@ -11,6 +11,7 @@ import {
   ImageIcon,
   Package,
   Plus,
+  Settings2,
   ShoppingBag,
   Warehouse,
 } from "lucide-react";
@@ -270,7 +271,7 @@ export default async function AdminDashboardPage() {
             </div>
           </div>
 
-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <QuickAccessCard
               href="/admin/produtos"
               icon={<Package size={25} />}
@@ -297,6 +298,13 @@ export default async function AdminDashboardPage() {
               icon={<FolderKanban size={25} />}
               title="Categorias"
               description="Crie, renomeie e organize as categorias do catálogo."
+            />
+
+            <QuickAccessCard
+              href="/admin/configuracoes"
+              icon={<Settings2 size={25} />}
+              title="Configurações"
+              description="Edite contatos, redes sociais, endereço e mensagens da loja."
             />
 
             <QuickAccessCard
