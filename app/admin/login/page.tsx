@@ -1,5 +1,7 @@
 import {
+  AlertCircle,
   ArrowLeft,
+  CircleCheckBig,
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
@@ -11,9 +13,43 @@ import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminLoginPage() {
-  const supabase =
-    await createClient();
+type AdminLoginPageProps = {
+  searchParams: Promise<{
+    passwordUpdated?:
+      | string
+      | string[];
+    error?: string | string[];
+  }>;
+};
+
+function getSingleSearchParam(
+  value: string | string[] | undefined
+) {
+  if (Array.isArray(value)) {
+    return value[0] ?? "";
+  }
+
+  return value ?? "";
+}
+
+function getLoginErrorMessage(
+  errorCode: string
+) {
+  if (errorCode === "link-invalido") {
+    return "O link é inválido ou expirou. Solicite um novo e-mail para definir a senha.";
+  }
+
+  if (errorCode === "sessao-invalida") {
+    return "A sessão para definir a senha expirou. Solicite um novo e-mail.";
+  }
+
+  return "";
+}
+
+export default async function AdminLoginPage({
+  searchParams,
+}: AdminLoginPageProps) {
+  const supabase = await createClient();
 
   const {
     data: { user },
@@ -25,6 +61,21 @@ export default async function AdminLoginPage() {
   ) {
     redirect("/admin");
   }
+
+  const resolvedSearchParams =
+    await searchParams;
+
+  const passwordUpdated =
+    getSingleSearchParam(
+      resolvedSearchParams.passwordUpdated
+    ) === "1";
+
+  const errorMessage =
+    getLoginErrorMessage(
+      getSingleSearchParam(
+        resolvedSearchParams.error
+      )
+    );
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-black px-4 py-10 text-white sm:px-6">
@@ -56,6 +107,33 @@ export default async function AdminLoginPage() {
             </p>
           </div>
         </div>
+
+        {passwordUpdated && (
+          <div className="mb-5 flex items-start gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-4 text-emerald-300">
+            <CircleCheckBig
+              size={20}
+              className="mt-0.5 shrink-0"
+            />
+
+            <p className="text-sm font-semibold">
+              Senha definida com sucesso.
+              Entre com a nova senha.
+            </p>
+          </div>
+        )}
+
+        {errorMessage && (
+          <div className="mb-5 flex items-start gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-4 text-red-300">
+            <AlertCircle
+              size={20}
+              className="mt-0.5 shrink-0"
+            />
+
+            <p className="text-sm font-semibold">
+              {errorMessage}
+            </p>
+          </div>
+        )}
 
         <LoginForm />
 

@@ -10,7 +10,8 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   const supabaseAnonKey =
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    process.env
+      .NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl) {
     throw new Error(
@@ -36,13 +37,24 @@ export async function createClient() {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(
-              ({ name, value, options }) => {
-                cookieStore.set(name, value, options);
+              ({
+                name,
+                value,
+                options,
+              }) => {
+                cookieStore.set(
+                  name,
+                  value,
+                  options
+                );
               }
             );
           } catch {
-            // Server Components não conseguem alterar cookies.
-            // O proxy será responsável por atualizar a sessão.
+            /*
+             * Server Components não conseguem
+             * alterar cookies. O proxy atualiza
+             * a sessão quando necessário.
+             */
           }
         },
       },

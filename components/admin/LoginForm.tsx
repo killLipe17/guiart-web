@@ -1,6 +1,5 @@
 "use client";
 
-import { useActionState, useState } from "react";
 import {
   AlertCircle,
   Eye,
@@ -10,6 +9,11 @@ import {
   LogIn,
   Mail,
 } from "lucide-react";
+import Link from "next/link";
+import {
+  useActionState,
+  useState,
+} from "react";
 
 import {
   loginAction,
@@ -22,9 +26,16 @@ const initialState: LoginActionState = {
 };
 
 export function LoginForm() {
-  const [showPassword, setShowPassword] = useState(false);
+  const [
+    showPassword,
+    setShowPassword,
+  ] = useState(false);
 
-  const [state, formAction, pending] = useActionState(
+  const [
+    state,
+    formAction,
+    pending,
+  ] = useActionState(
     loginAction,
     initialState
   );
@@ -48,8 +59,8 @@ export function LoginForm() {
         </h1>
 
         <p className="mt-3 leading-7 text-zinc-400">
-          Entre com o e-mail e a senha cadastrados para gerenciar os
-          produtos da loja.
+          Entre com o e-mail e a senha
+          cadastrados para gerenciar a loja.
         </p>
       </div>
 
@@ -81,12 +92,21 @@ export function LoginForm() {
       </div>
 
       <div className="mt-5">
-        <label
-          htmlFor="password"
-          className="text-sm font-medium text-zinc-300"
-        >
-          Senha
-        </label>
+        <div className="flex items-center justify-between gap-3">
+          <label
+            htmlFor="password"
+            className="text-sm font-medium text-zinc-300"
+          >
+            Senha
+          </label>
+
+          <Link
+            href="/recuperar-senha"
+            className="text-xs font-bold text-yellow-400 transition hover:text-yellow-300"
+          >
+            Esqueci minha senha
+          </Link>
+        </div>
 
         <div className="relative mt-2">
           <LockKeyhole
@@ -97,7 +117,11 @@ export function LoginForm() {
           <input
             id="password"
             name="password"
-            type={showPassword ? "text" : "password"}
+            type={
+              showPassword
+                ? "text"
+                : "password"
+            }
             autoComplete="current-password"
             required
             disabled={pending}
@@ -108,9 +132,15 @@ export function LoginForm() {
           <button
             type="button"
             disabled={pending}
-            onClick={() => setShowPassword((current) => !current)}
+            onClick={() =>
+              setShowPassword(
+                (current) => !current
+              )
+            }
             aria-label={
-              showPassword ? "Ocultar senha" : "Mostrar senha"
+              showPassword
+                ? "Ocultar senha"
+                : "Mostrar senha"
             }
             className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 transition hover:text-yellow-400 disabled:cursor-not-allowed"
           >
@@ -156,7 +186,8 @@ export function LoginForm() {
       </button>
 
       <p className="mt-6 text-center text-xs leading-5 text-zinc-600">
-        Área restrita aos administradores da Guiart Games.
+        Área restrita aos administradores da
+        Guiart Games.
       </p>
     </form>
   );

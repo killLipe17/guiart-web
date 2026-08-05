@@ -29,8 +29,7 @@ export async function loginAction(
   if (!email || !password) {
     return {
       success: false,
-      message:
-        "Informe o e-mail e a senha.",
+      message: "Informe o e-mail e a senha.",
     };
   }
 
@@ -45,8 +44,7 @@ export async function loginAction(
     };
   }
 
-  const supabase =
-    await createClient();
+  const supabase = await createClient();
 
   const { data, error } =
     await supabase.auth.signInWithPassword({
@@ -57,8 +55,7 @@ export async function loginAction(
   if (error || !data.user) {
     return {
       success: false,
-      message:
-        "E-mail ou senha incorretos.",
+      message: "E-mail ou senha incorretos.",
     };
   }
 
@@ -80,8 +77,7 @@ export async function loginAction(
 }
 
 export async function logoutAction() {
-  const supabase =
-    await createClient();
+  const supabase = await createClient();
 
   const { error } =
     await supabase.auth.signOut();
