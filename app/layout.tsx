@@ -23,11 +23,14 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: ReactNode;
 }>) {
+  const settings =
+    await getStoreSettings();
+
   return (
     <html
       lang="pt-BR"
@@ -38,7 +41,27 @@ export default function RootLayout({
       >
         <CartProvider>
           {children}
-          <CartDrawer />
+
+          <CartDrawer
+            storeName={
+              settings.storeName
+            }
+            whatsappNumber={
+              settings.whatsappNumber
+            }
+            whatsappMessage={
+              settings.whatsappMessage
+            }
+            pickupNotice={
+              settings.pickupNotice
+            }
+            address={
+              settings.address
+            }
+            addressReference={
+              settings.addressReference
+            }
+          />
         </CartProvider>
       </body>
     </html>

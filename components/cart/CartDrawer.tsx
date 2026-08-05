@@ -48,7 +48,23 @@ type OrderErrorResponse = {
   error: string;
 };
 
-export function CartDrawer() {
+type CartDrawerProps = {
+  storeName: string;
+  whatsappNumber: string;
+  whatsappMessage: string;
+  pickupNotice: string;
+  address: string;
+  addressReference: string;
+};
+
+export function CartDrawer({
+  storeName,
+  whatsappNumber,
+  whatsappMessage,
+  pickupNotice,
+  address,
+  addressReference,
+}: CartDrawerProps) {
   const {
     items,
     totalPrice,
@@ -238,8 +254,20 @@ export function CartDrawer() {
           }
         );
 
+      const normalizedAddress = [
+        address
+          .trim()
+          .replace(/\s*\n+\s*/g, ", "),
+        addressReference.trim(),
+      ]
+        .filter(Boolean)
+        .join(" • ");
+
       const message = [
-        "Olá! Gostaria de confirmar um pedido na Guiart Games.",
+        whatsappMessage.trim() ||
+          `Olá! Vim pelo site da ${storeName}.`,
+        "",
+        `Gostaria de confirmar um pedido na ${storeName}.`,
         "",
         `Pedido #${order.number}`,
         `Cliente: ${normalizedName}`,
@@ -258,11 +286,23 @@ export function CartDrawer() {
           ? `Observações: ${notes.trim()}`
           : "Observações: nenhuma.",
         "",
+        pickupNotice.trim()
+          ? `Retirada: ${pickupNotice.trim()}`
+          : null,
+        normalizedAddress
+          ? `Endereço da loja: ${normalizedAddress}`
+          : null,
+        "",
         "O pedido foi registrado no site e aguarda confirmação da loja.",
-      ].join("\n");
+      ]
+        .filter(
+          (line): line is string =>
+            line !== null
+        )
+        .join("\n");
 
       const whatsappUrl =
-        `https://wa.me/5511962222045?text=${encodeURIComponent(
+        `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
           message
         )}`;
 
