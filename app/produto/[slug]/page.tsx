@@ -20,6 +20,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { prisma } from "@/lib/prisma";
+import { getStoreSettings } from "@/lib/store-settings";
 
 type ProductPageProps = {
   params: Promise<{
@@ -42,44 +43,55 @@ export async function generateMetadata({
 }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
 
-  const product = await prisma.product.findUnique({
-    where: {
-      slug,
-    },
-    select: {
-      title: true,
-      description: true,
-      images: {
-        orderBy: [
-          {
-            isCover: "desc",
-          },
-          {
-            order: "asc",
-          },
-        ],
-        take: 1,
-        select: {
-          url: true,
+  const [settings, product] =
+    await Promise.all([
+      getStoreSettings(),
+
+      prisma.product.findUnique({
+        where: {
+          slug,
         },
-      },
-    },
-  });
+
+        select: {
+          title: true,
+          description: true,
+
+          images: {
+            orderBy: [
+              {
+                isCover: "desc",
+              },
+              {
+                order: "asc",
+              },
+            ],
+
+            take: 1,
+
+            select: {
+              url: true,
+            },
+          },
+        },
+      }),
+    ]);
 
   if (!product) {
     return {
-      title:
-        "Produto não encontrado | Guiart Games",
+      title: `Produto não encontrado | ${settings.storeName}`,
     };
   }
 
+  const description =
+    product.description.slice(0, 160);
+
   return {
-    title: `${product.title} | Guiart Games`,
-    description: product.description.slice(0, 160),
+    title: `${product.title} | ${settings.storeName}`,
+    description,
 
     openGraph: {
-      title: product.title,
-      description: product.description.slice(0, 160),
+      title: `${product.title} | ${settings.storeName}`,
+      description,
 
       images: product.images[0]?.url
         ? [
@@ -97,50 +109,55 @@ export default async function ProductPage({
 }: ProductPageProps) {
   const { slug } = await params;
 
-  const product = await prisma.product.findUnique({
-    where: {
-      slug,
-    },
+  const [settings, product] =
+    await Promise.all([
+      getStoreSettings(),
 
-    select: {
-      id: true,
-      title: true,
-      slug: true,
-      description: true,
-      price: true,
-      console: true,
-      condition: true,
-      stock: true,
-      hasBox: true,
-      hasManual: true,
-      featured: true,
-      rarity: true,
-      categoryId: true,
-
-      category: {
-        select: {
-          name: true,
+      prisma.product.findUnique({
+        where: {
+          slug,
         },
-      },
-
-      images: {
-        orderBy: [
-          {
-            isCover: "desc",
-          },
-          {
-            order: "asc",
-          },
-        ],
 
         select: {
           id: true,
-          url: true,
-          alt: true,
+          title: true,
+          slug: true,
+          description: true,
+          price: true,
+          console: true,
+          condition: true,
+          stock: true,
+          hasBox: true,
+          hasManual: true,
+          featured: true,
+          rarity: true,
+          categoryId: true,
+
+          category: {
+            select: {
+              name: true,
+            },
+          },
+
+          images: {
+            orderBy: [
+              {
+                isCover: "desc",
+              },
+              {
+                order: "asc",
+              },
+            ],
+
+            select: {
+              id: true,
+              url: true,
+              alt: true,
+            },
+          },
         },
-      },
-    },
-  });
+      }),
+    ]);
 
   if (!product) {
     notFound();
@@ -199,19 +216,30 @@ export default async function ProductPage({
       },
     });
 
-  const numericPrice = Number(product.price);
+  const numericPrice =
+    Number(product.price);
 
   const price =
-    currencyFormatter.format(numericPrice);
+    currencyFormatter.format(
+      numericPrice
+    );
 
-  const whatsappMessage = encodeURIComponent(
-    `Olá! Tenho interesse no produto "${product.title}" por ${price}. Ele ainda está disponível?`
-  );
+  const whatsappMessage = [
+    settings.whatsappMessage.trim(),
+    `Tenho interesse no produto "${product.title}" por ${price}.`,
+    "Ele ainda está disponível?",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
   const whatsappUrl =
-    `https://wa.me/5511962222045?text=${whatsappMessage}`;
+    `https://wa.me/${settings.whatsappNumber}` +
+    `?text=${encodeURIComponent(
+      whatsappMessage
+    )}`;
 
-  const isAvailable = product.stock > 0;
+  const isAvailable =
+    product.stock > 0;
 
   return (
     <>
@@ -233,7 +261,9 @@ export default async function ProductPage({
         <section className="mx-auto grid max-w-7xl gap-10 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:py-16">
           <ProductGallery
             images={product.images}
-            productTitle={product.title}
+            productTitle={
+              product.title
+            }
           />
 
           <div>
@@ -285,7 +315,9 @@ export default async function ProductPage({
                 }`}
               >
                 {isAvailable ? (
-                  <PackageCheck size={18} />
+                  <PackageCheck
+                    size={18}
+                  />
                 ) : (
                   <X size={18} />
                 )}
@@ -298,24 +330,39 @@ export default async function ProductPage({
               <ProductPurchaseActions
                 product={{
                   id: product.id,
-                  title: product.title,
-                  slug: product.slug,
-                  price: numericPrice,
-                  stock: product.stock,
+                  title:
+                    product.title,
+                  slug:
+                    product.slug,
+                  price:
+                    numericPrice,
+                  stock:
+                    product.stock,
                   imageUrl:
-                    product.images[0]?.url ?? null,
-                  console: product.console,
-                  condition: product.condition,
+                    product.images[0]
+                      ?.url ?? null,
+                  console:
+                    product.console,
+                  condition:
+                    product.condition,
                 }}
-                whatsappUrl={whatsappUrl}
+                whatsappUrl={
+                  whatsappUrl
+                }
               />
             </div>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
               <ProductInfo
-                icon={<ShieldCheck size={20} />}
+                icon={
+                  <ShieldCheck
+                    size={20}
+                  />
+                }
                 label="Conservação"
-                value={product.condition}
+                value={
+                  product.condition
+                }
                 positive
               />
 
@@ -323,18 +370,30 @@ export default async function ProductPage({
                 icon={<Box size={20} />}
                 label="Possui caixa"
                 value={
-                  product.hasBox ? "Sim" : "Não"
+                  product.hasBox
+                    ? "Sim"
+                    : "Não"
                 }
-                positive={product.hasBox}
+                positive={
+                  product.hasBox
+                }
               />
 
               <ProductInfo
-                icon={<PackageCheck size={20} />}
+                icon={
+                  <PackageCheck
+                    size={20}
+                  />
+                }
                 label="Possui manual"
                 value={
-                  product.hasManual ? "Sim" : "Não"
+                  product.hasManual
+                    ? "Sim"
+                    : "Não"
                 }
-                positive={product.hasManual}
+                positive={
+                  product.hasManual
+                }
               />
             </div>
 
@@ -349,11 +408,25 @@ export default async function ProductPage({
                   Retirada na loja física
                 </p>
 
-                <p className="mt-1 text-sm leading-6 text-zinc-500">
-                  Rua dos Buritis, 54, Loja 9 —
-                  Jardim Oriental, São Paulo.
-                  Próximo ao Metrô Jabaquara.
+                {settings.pickupNotice && (
+                  <p className="mt-1 whitespace-pre-line text-sm leading-6 text-zinc-500">
+                    {
+                      settings.pickupNotice
+                    }
+                  </p>
+                )}
+
+                <p className="mt-2 whitespace-pre-line text-sm leading-6 text-zinc-500">
+                  {settings.address}
                 </p>
+
+                {settings.addressReference && (
+                  <p className="mt-1 text-sm leading-6 text-zinc-500">
+                    {
+                      settings.addressReference
+                    }
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -371,7 +444,8 @@ export default async function ProductPage({
           </div>
         </section>
 
-        {relatedProducts.length > 0 && (
+        {relatedProducts.length >
+          0 && (
           <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6">
             <div>
               <p className="text-sm font-bold uppercase tracking-[0.2em] text-yellow-400">
@@ -385,20 +459,27 @@ export default async function ProductPage({
 
             <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {relatedProducts.map(
-                (relatedProduct) => {
+                (
+                  relatedProduct
+                ) => {
                   const relatedImage =
-                    relatedProduct.images[0];
+                    relatedProduct
+                      .images[0];
 
                   return (
                     <Link
-                      key={relatedProduct.id}
+                      key={
+                        relatedProduct.id
+                      }
                       href={`/produto/${relatedProduct.slug}`}
                       className="group overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 transition hover:-translate-y-1 hover:border-yellow-400/40"
                     >
                       <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-zinc-900">
                         {relatedImage ? (
                           <img
-                            src={relatedImage.url}
+                            src={
+                              relatedImage.url
+                            }
                             alt={
                               relatedImage.alt ??
                               relatedProduct.title
@@ -414,7 +495,9 @@ export default async function ProductPage({
 
                         {relatedProduct.rarity && (
                           <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-purple-600 px-3 py-1 text-xs font-bold">
-                            <Gem size={13} />
+                            <Gem
+                              size={13}
+                            />
                             Raridade
                           </span>
                         )}
@@ -422,11 +505,15 @@ export default async function ProductPage({
 
                       <div className="p-5">
                         <p className="text-sm text-yellow-400">
-                          {relatedProduct.console}
+                          {
+                            relatedProduct.console
+                          }
                         </p>
 
                         <h3 className="mt-2 text-lg font-bold transition group-hover:text-yellow-400">
-                          {relatedProduct.title}
+                          {
+                            relatedProduct.title
+                          }
                         </h3>
 
                         <p className="mt-4 text-xl font-black">
