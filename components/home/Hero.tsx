@@ -18,7 +18,7 @@ export function Hero({
 }: HeroProps) {
   const locationText =
     addressReference.trim() ||
-    "Próximo ao Metrô Jabaquara";
+    "Atendimento presencial";
 
   return (
     <section className="relative w-full overflow-hidden bg-zinc-950">

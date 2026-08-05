@@ -8,77 +8,88 @@ import {
 
 import { prisma } from "@/lib/prisma";
 
-const currencyFormatter = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-});
-
-export async function FeaturedProducts() {
-  const products = await prisma.product.findMany({
-    where: {
-      stock: {
-        gt: 0,
-      },
-    },
-
-    orderBy: [
-      {
-        featured: "desc",
-      },
-      {
-        createdAt: "desc",
-      },
-    ],
-
-    take: 6,
-
-    select: {
-      id: true,
-      title: true,
-      slug: true,
-      price: true,
-      console: true,
-      condition: true,
-      featured: true,
-      rarity: true,
-
-      category: {
-        select: {
-          name: true,
-        },
-      },
-
-      images: {
-        orderBy: [
-          {
-            isCover: "desc",
-          },
-          {
-            order: "asc",
-          },
-        ],
-
-        take: 1,
-
-        select: {
-          url: true,
-          alt: true,
-        },
-      },
-    },
+const currencyFormatter =
+  new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
   });
+
+type FeaturedProductsProps = {
+  storeName: string;
+};
+
+export async function FeaturedProducts({
+  storeName,
+}: FeaturedProductsProps) {
+  const products =
+    await prisma.product.findMany({
+      where: {
+        stock: {
+          gt: 0,
+        },
+      },
+
+      orderBy: [
+        {
+          featured: "desc",
+        },
+        {
+          createdAt: "desc",
+        },
+      ],
+
+      take: 6,
+
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        price: true,
+        console: true,
+        condition: true,
+        featured: true,
+        rarity: true,
+
+        category: {
+          select: {
+            name: true,
+          },
+        },
+
+        images: {
+          orderBy: [
+            {
+              isCover: "desc",
+            },
+            {
+              order: "asc",
+            },
+          ],
+
+          take: 1,
+
+          select: {
+            url: true,
+            alt: true,
+          },
+        },
+      },
+    });
 
   if (products.length === 0) {
     return null;
   }
 
   return (
-    <section className="bg-black px-4 py-16 text-white sm:px-6 sm:py-20">
+    <section
+      id="produtos"
+      className="scroll-mt-28 bg-black px-4 py-16 text-white sm:px-6 sm:py-20"
+    >
       <div className="mx-auto max-w-7xl">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.25em] text-yellow-400">
-              Seleção Guiart
+              Seleção da loja
             </p>
 
             <h2 className="mt-3 text-3xl font-black sm:text-4xl">
@@ -86,7 +97,8 @@ export async function FeaturedProducts() {
             </h2>
 
             <p className="mt-4 max-w-2xl leading-7 text-zinc-400">
-              Games, consoles e colecionáveis disponíveis na loja.
+              Games, consoles e colecionáveis
+              disponíveis na loja.
             </p>
           </div>
 
@@ -101,7 +113,8 @@ export async function FeaturedProducts() {
 
         <div className="mt-10 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {products.map((product) => {
-            const coverImage = product.images[0];
+            const coverImage =
+              product.images[0];
 
             return (
               <Link
@@ -115,7 +128,7 @@ export async function FeaturedProducts() {
                       src={coverImage.url}
                       alt={
                         coverImage.alt ??
-                        `${product.title} - Guiart Games`
+                        `${product.title} - ${storeName}`
                       }
                       className="h-full w-full object-contain p-4 transition duration-500 group-hover:scale-105"
                     />
@@ -154,7 +167,9 @@ export async function FeaturedProducts() {
 
                 <div className="p-5 sm:p-6">
                   <p className="text-xs font-bold uppercase tracking-[0.18em] text-yellow-400">
-                    {product.category.name}
+                    {
+                      product.category.name
+                    }
                   </p>
 
                   <h3 className="mt-3 text-xl font-black leading-tight transition group-hover:text-yellow-400">
@@ -162,7 +177,8 @@ export async function FeaturedProducts() {
                   </h3>
 
                   <p className="mt-2 text-sm text-zinc-500">
-                    {product.console} • {product.condition}
+                    {product.console} •{" "}
+                    {product.condition}
                   </p>
 
                   <div className="mt-5 flex items-end justify-between gap-4 border-t border-zinc-900 pt-5">
@@ -173,14 +189,18 @@ export async function FeaturedProducts() {
 
                       <p className="mt-1 text-2xl font-black">
                         {currencyFormatter.format(
-                          Number(product.price)
+                          Number(
+                            product.price
+                          )
                         )}
                       </p>
                     </div>
 
                     <span className="inline-flex items-center gap-1 text-sm font-bold text-yellow-400">
                       Ver produto
-                      <ArrowRight size={16} />
+                      <ArrowRight
+                        size={16}
+                      />
                     </span>
                   </div>
                 </div>

@@ -4,48 +4,52 @@ import {
   Phone,
 } from "lucide-react";
 
-import { getStoreSettings } from "@/lib/store-settings";
+type TopBarProps = {
+  addressReference: string;
+  businessHours: string;
+  whatsappDisplay: string;
+  whatsappUrl: string;
+};
 
-export async function TopBar() {
-  const settings =
-    await getStoreSettings();
+export function TopBar({
+  addressReference,
+  businessHours,
+  whatsappDisplay,
+  whatsappUrl,
+}: TopBarProps) {
+  const locationText =
+    addressReference.trim() ||
+    "Loja física";
 
-  const whatsappUrl =
-    `https://wa.me/${settings.whatsappNumber}` +
-    `?text=${encodeURIComponent(
-      settings.whatsappMessage
-    )}`;
-
-  const businessHours =
-    settings.businessHours
+  const hoursText =
+    businessHours
       .replace(/\s*\n+\s*/g, " • ")
       .trim();
 
   return (
     <div className="border-b border-zinc-800 bg-zinc-950">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-2 text-xs text-zinc-400">
-        <div className="flex items-center gap-5">
-          <div className="flex items-center gap-2">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-2 text-xs text-zinc-400 sm:px-6">
+        <div className="flex min-w-0 items-center gap-5">
+          <div className="flex min-w-0 items-center gap-2">
             <MapPin
               size={14}
-              className="text-yellow-400"
+              className="shrink-0 text-yellow-400"
             />
 
-            <span>
-              {settings.addressReference ||
-                "Jabaquara • São Paulo"}
+            <span className="truncate">
+              {locationText}
             </span>
           </div>
 
-          {businessHours && (
+          {hoursText && (
             <div className="hidden items-center gap-2 md:flex">
               <Clock3
                 size={14}
-                className="text-yellow-400"
+                className="shrink-0 text-yellow-400"
               />
 
               <span>
-                {businessHours}
+                {hoursText}
               </span>
             </div>
           )}
@@ -55,7 +59,7 @@ export async function TopBar() {
           href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 transition hover:text-yellow-400"
+          className="flex shrink-0 items-center gap-2 transition hover:text-yellow-400"
         >
           <Phone
             size={14}
@@ -63,7 +67,7 @@ export async function TopBar() {
           />
 
           <span>
-            {settings.whatsappDisplay}
+            {whatsappDisplay}
           </span>
         </a>
       </div>

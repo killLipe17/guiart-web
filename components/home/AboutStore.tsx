@@ -45,7 +45,8 @@ export function AboutStore({
               <Store className="shrink-0 text-yellow-400" />
 
               <span>
-                Loja física em São Paulo
+                Loja física com atendimento
+                presencial
               </span>
             </div>
 
@@ -54,7 +55,7 @@ export function AboutStore({
 
               <span>
                 {addressReference ||
-                  "Próximo ao Metrô Jabaquara"}
+                  "Consulte a localização no rodapé"}
               </span>
             </div>
 

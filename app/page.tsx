@@ -46,7 +46,9 @@ export default async function Home() {
         }
       />
 
-      <FeaturedProducts />
+      <FeaturedProducts
+        storeName={settings.storeName}
+      />
 
       <CallToAction
         whatsappUrl={whatsappUrl}

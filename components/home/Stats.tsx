@@ -1,19 +1,19 @@
-const stats = [
+const services = [
   {
-    value: "+1000",
-    label: "Games e consoles",
+    value: "Compra",
+    label: "Games, consoles e colecionáveis",
   },
   {
-    value: "+500",
-    label: "Colecionáveis",
+    value: "Venda",
+    label: "Produtos selecionados e testados",
   },
   {
-    value: "Loja Física",
-    label: "São Paulo",
+    value: "Troca",
+    label: "Avaliação transparente dos itens",
   },
   {
-    value: "100%",
-    label: "Fotos reais",
+    value: "Raridades",
+    label: "Peças especiais para colecionadores",
   },
 ];
 
@@ -21,22 +21,20 @@ export function Stats() {
   return (
     <section className="py-20">
       <div className="mx-auto grid max-w-7xl gap-8 px-6 md:grid-cols-4">
-
-        {stats.map((item) => (
+        {services.map((item) => (
           <div
-            key={item.label}
+            key={item.value}
             className="rounded-3xl border border-zinc-800 bg-zinc-900 p-10 text-center transition-all duration-300 hover:-translate-y-2 hover:border-yellow-400"
           >
-            <div className="text-5xl font-black text-yellow-400">
+            <div className="text-3xl font-black text-yellow-400 sm:text-4xl">
               {item.value}
             </div>
 
-            <p className="mt-4 text-zinc-400">
+            <p className="mt-4 leading-6 text-zinc-400">
               {item.label}
             </p>
           </div>
         ))}
-
       </div>
     </section>
   );
