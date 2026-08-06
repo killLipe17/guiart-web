@@ -47,6 +47,22 @@ export type RegisterImageResult =
       message: string;
     };
 
+type ReplaceProductImageInput = {
+  imageId: string;
+  productId: string;
+  storagePath: string;
+};
+
+export type ReplaceProductImageResult =
+  | {
+      success: true;
+      message: string;
+    }
+  | {
+      success: false;
+      message: string;
+    };
+
 export async function prepareProductImageUploadAction(
   input: PrepareUploadInput
 ): Promise<PrepareUploadResult> {
@@ -318,6 +334,182 @@ export async function registerProductImageAction(
         error instanceof Error
           ? error.message
           : "Não foi possível cadastrar a imagem.",
+    };
+  }
+}
+
+export async function replaceProductImageAction(
+  input: ReplaceProductImageInput
+): Promise<ReplaceProductImageResult> {
+  await requireAdmin();
+
+  const imageId =
+    String(
+      input?.imageId ?? ""
+    ).trim();
+
+  const productId =
+    String(
+      input?.productId ?? ""
+    ).trim();
+
+  const storagePath =
+    String(
+      input?.storagePath ?? ""
+    ).trim();
+
+  if (
+    !imageId ||
+    !productId ||
+    !storagePath
+  ) {
+    return {
+      success: false,
+      message:
+        "Dados da rotação incompletos.",
+    };
+  }
+
+  if (
+    !storagePath.startsWith(
+      `${productId}/`
+    )
+  ) {
+    return {
+      success: false,
+      message:
+        "O caminho da nova imagem é inválido.",
+    };
+  }
+
+  const image =
+    await prisma.productImage.findFirst({
+      where: {
+        id: imageId,
+        productId,
+      },
+
+      select: {
+        id: true,
+        storagePath: true,
+
+        product: {
+          select: {
+            slug: true,
+          },
+        },
+      },
+    });
+
+  if (!image) {
+    return {
+      success: false,
+      message:
+        "Imagem não encontrada.",
+    };
+  }
+
+  if (
+    image.storagePath ===
+    storagePath
+  ) {
+    return {
+      success: false,
+      message:
+        "A nova imagem precisa ter um caminho diferente.",
+    };
+  }
+
+  const alreadyRegistered =
+    await prisma.productImage.findUnique({
+      where: {
+        storagePath,
+      },
+
+      select: {
+        id: true,
+      },
+    });
+
+  if (alreadyRegistered) {
+    return {
+      success: false,
+      message:
+        "Essa nova imagem já está cadastrada.",
+    };
+  }
+
+  try {
+    const existsInStorage =
+      await productImageExists(
+        storagePath
+      );
+
+    if (!existsInStorage) {
+      return {
+        success: false,
+        message:
+          "A imagem girada não foi encontrada no Storage.",
+      };
+    }
+
+    await prisma.productImage.update({
+      where: {
+        id: image.id,
+      },
+
+      data: {
+        storagePath,
+        url:
+          getProductImagePublicUrl(
+            storagePath
+          ),
+      },
+    });
+
+    try {
+      await deleteProductImage(
+        image.storagePath
+      );
+    } catch (storageError) {
+      console.error(
+        "A imagem foi atualizada, mas o arquivo antigo não pôde ser removido:",
+        storageError
+      );
+    }
+
+    revalidateProductImagePaths(
+      image.product.slug
+    );
+
+    return {
+      success: true,
+      message:
+        "Imagem girada e salva com sucesso.",
+    };
+  } catch (error) {
+    console.error(
+      "Erro ao substituir imagem girada:",
+      error
+    );
+
+    try {
+      await deleteProductImage(
+        storagePath
+      );
+    } catch (cleanupError) {
+      console.error(
+        "Erro ao remover a nova imagem após falha:",
+        cleanupError
+      );
+    }
+
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Não foi possível salvar a imagem girada.",
     };
   }
 }

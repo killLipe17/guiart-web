@@ -11,6 +11,7 @@ import {
   deleteProductImageAction,
   setProductImageCoverAction,
 } from "@/actions/product-images";
+import { ProductImageRotationControls } from "@/components/admin/ProductImageRotationControls";
 import { ProductImageUploadForm } from "@/components/admin/ProductImageUploadForm";
 import { prisma } from "@/lib/prisma";
 
@@ -138,49 +139,100 @@ export default async function ProductImagesPage({
             ) : (
               <div className="grid gap-4 sm:grid-cols-2">
                 {product.images.map(
-                  (image) => (
-                    <article
-                      key={image.id}
-                      className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950"
-                    >
-                      <div className="relative flex aspect-square items-center justify-center bg-zinc-900">
-                        <img
-                          src={image.url}
-                          alt={
-                            image.alt ??
-                            `${product.title} - imagem do produto`
-                          }
-                          className="h-full w-full object-contain"
-                        />
+                  (image) => {
+                    const imageAlt =
+                      image.alt ??
+                      `${product.title} - imagem do produto`;
 
-                        {image.isCover && (
-                          <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-yellow-400 px-3 py-1.5 text-xs font-bold text-black shadow-lg">
-                            <Star
-                              size={14}
-                              fill="currentColor"
-                            />
-                            Capa
-                          </div>
-                        )}
-                      </div>
+                    return (
+                      <article
+                        key={image.id}
+                        className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950"
+                      >
+                        <div className="relative flex aspect-square items-center justify-center bg-zinc-900">
+                          <img
+                            src={image.url}
+                            alt={imageAlt}
+                            className="h-full w-full object-contain"
+                          />
 
-                      <div className="p-4">
-                        <p className="line-clamp-2 text-sm text-zinc-300">
-                          {image.alt ||
-                            "Imagem sem descrição"}
-                        </p>
+                          {image.isCover && (
+                            <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-yellow-400 px-3 py-1.5 text-xs font-bold text-black shadow-lg">
+                              <Star
+                                size={14}
+                                fill="currentColor"
+                              />
+                              Capa
+                            </div>
+                          )}
+                        </div>
 
-                        <p className="mt-2 text-xs text-zinc-600">
-                          Ordem:{" "}
-                          {image.order}
-                        </p>
+                        <div className="p-4">
+                          <p className="line-clamp-2 text-sm text-zinc-300">
+                            {image.alt ||
+                              "Imagem sem descrição"}
+                          </p>
 
-                        {!image.isCover && (
+                          <p className="mt-2 text-xs text-zinc-600">
+                            Ordem:{" "}
+                            {image.order}
+                          </p>
+
+                          <ProductImageRotationControls
+                            imageId={
+                              image.id
+                            }
+                            productId={
+                              product.id
+                            }
+                            imageUrl={
+                              image.url
+                            }
+                            imageAlt={
+                              imageAlt
+                            }
+                          />
+
+                          {!image.isCover && (
+                            <form
+                              action={
+                                setProductImageCoverAction
+                              }
+                              className="mt-4"
+                            >
+                              <input
+                                type="hidden"
+                                name="imageId"
+                                value={
+                                  image.id
+                                }
+                              />
+
+                              <input
+                                type="hidden"
+                                name="productId"
+                                value={
+                                  product.id
+                                }
+                              />
+
+                              <button
+                                type="submit"
+                                className="flex w-full items-center justify-center gap-2 rounded-xl border border-yellow-400/40 px-4 py-2 text-sm font-semibold text-yellow-400 transition hover:bg-yellow-400 hover:text-black"
+                              >
+                                <Star
+                                  size={16}
+                                />
+                                Definir como capa
+                              </button>
+                            </form>
+                          )}
+
                           <form
                             action={
-                              setProductImageCoverAction
+                              deleteProductImageAction
                             }
-                            className="mt-4"
+                            className="mt-3"
                           >
                             <input
                               type="hidden"
@@ -200,51 +252,18 @@ export default async function ProductImagesPage({
 
                             <button
                               type="submit"
-                              className="flex w-full items-center justify-center gap-2 rounded-xl border border-yellow-400/40 px-4 py-2 text-sm font-semibold text-yellow-400 transition hover:bg-yellow-400 hover:text-black"
+                              className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/30 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500 hover:text-white"
                             >
-                              <Star
+                              <Trash2
                                 size={16}
                               />
-                              Definir como capa
+                              Excluir imagem
                             </button>
                           </form>
-                        )}
-
-                        <form
-                          action={
-                            deleteProductImageAction
-                          }
-                          className="mt-3"
-                        >
-                          <input
-                            type="hidden"
-                            name="imageId"
-                            value={
-                              image.id
-                            }
-                          />
-
-                          <input
-                            type="hidden"
-                            name="productId"
-                            value={
-                              product.id
-                            }
-                          />
-
-                          <button
-                            type="submit"
-                            className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/30 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500 hover:text-white"
-                          >
-                            <Trash2
-                              size={16}
-                            />
-                            Excluir imagem
-                          </button>
-                        </form>
-                      </div>
-                    </article>
-                  )
+                        </div>
+                      </article>
+                    );
+                  }
                 )}
               </div>
             )}
