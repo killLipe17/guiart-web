@@ -11,7 +11,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { useCart } from "@/components/cart/CartProvider";
-import { Input } from "@/components/ui/Input";
+import { HeaderSearch } from "@/components/layout/HeaderSearch";
 import { Logo } from "@/components/ui/Logo";
 
 type HeaderClientProps = {
@@ -106,10 +106,7 @@ export function HeaderClient({
           </nav>
 
           <div className="hidden min-w-0 flex-1 md:block lg:max-w-xs xl:max-w-sm">
-            <Input
-              placeholder="Buscar jogos, consoles e colecionáveis..."
-              className="w-full border-purple-500/20 bg-[#100d16]/90 shadow-[0_10px_30px_rgba(0,0,0,0.2)] focus:border-yellow-400"
-            />
+            <HeaderSearch />
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
@@ -191,9 +188,11 @@ export function HeaderClient({
           >
             <div className="guiart-surface rounded-2xl p-3">
               <div className="mb-3">
-                <Input
-                  placeholder="Buscar jogos e consoles..."
-                  className="w-full border-purple-500/20 bg-black/45 focus:border-yellow-400"
+                <HeaderSearch
+                  mobile
+                  onNavigate={
+                    closeMobileMenu
+                  }
                 />
               </div>
 
