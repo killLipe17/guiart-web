@@ -20,6 +20,19 @@ export async function generateMetadata(): Promise<Metadata> {
     title: settings.storeName,
     description:
       "Compra, venda e troca de games, consoles e colecionáveis.",
+
+    icons: {
+      icon: [
+        {
+          url: "/brand/favicon-guiart.png",
+          type: "image/png",
+        },
+      ],
+      shortcut:
+        "/brand/favicon-guiart.png",
+      apple:
+        "/brand/favicon-guiart.png",
+    },
   };
 }
 
